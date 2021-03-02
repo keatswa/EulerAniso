@@ -1,0 +1,201 @@
+{
+	"mesh": "backwardStepO2",
+	"faces": [
+	{
+		"fid": 0,
+		"x": -20.0,
+		"y": 40.0,
+		"isBC": "TRUE",
+		"bcType": "WALL",
+		"length": 40.0
+	},
+	{
+		"fid": 1,
+		"x": 20.0,
+		"y": 40.0,
+		"isBC": "TRUE",
+		"bcType": "WALL",
+		"length": 40.0
+	},
+	{
+		"fid": 2,
+		"x": -40.0,
+		"y":  20.0,
+		"isBC": "TRUE",
+		"bcType": "INLET",
+		"length": 40.0
+	},
+	{
+		"fid": 3,
+		"x":  0.0,
+		"y": 20.0,
+		"isBC": "FALSE",
+		"bcType": "NA",
+		"length": 40.0
+	},
+	{
+		"fid": 4,
+		"x": 40.0,
+		"y": 20.0,
+		"isBC": "TRUE",
+		"bcType": "WALL",
+		"length": 40.0
+	},
+	{
+		"fid": 5,
+		"x": -20.0,
+		"y":   0.0,
+		"isBC": "TRUE",
+		"bcType": "WALL",
+		"length": 40.0
+	},
+	{
+		"fid": 6,
+		"x": 20.0,
+		"y":  0.0,
+		"isBC": "FALSE",
+		"bcType": "NA",
+		"length": 40.0
+	},
+	{
+		"fid": 7,
+		"x":   0.0,
+		"y": -20.0,
+		"isBC": "TRUE",
+		"bcType": "WALL",
+		"length": 40.0
+	},
+	{
+		"fid": 8,
+		"x":  40.0,
+		"y": -20.0,
+		"isBC": "TRUE",
+		"bcType": "WALL",
+		"length": 40.0
+	},
+	{
+		"fid": 9,
+		"x":  20.0,
+		"y": -40.0,
+		"isBC": "TRUE",
+		"bcType": "WALL",
+		"length": 40.0
+	}],
+	"cells": [
+	{
+		"cid": 0,
+		"i": 0,
+		"j": 1,
+		"faceIDs": 
+		{
+			"fN": [
+			{
+				"fid": 0
+			}],
+			"fS": [
+			{
+				"fid": 5
+			}],
+			"fE": [
+			{
+				"fid": 3
+			}],
+			"fW": [
+			{
+				"fid": 2
+			}]
+		}
+	},
+	{
+		"cid": 1,
+		"i": 1,
+		"j": 1,
+		"faceIDs": 
+		{
+			"fN": [
+			{
+				"fid": 1
+			}],
+			"fS": [
+			{
+				"fid": 6
+			}],
+			"fE": [
+			{
+				"fid": 4
+			}],
+			"fW": [
+			{
+				"fid": 3
+			}]
+		}
+	},
+	{
+		"cid": 2,
+		"i": 1,
+		"j": 0,
+		"faceIDs": 
+		{
+			"fN": [
+			{
+				"fid": 6
+			}],
+			"fS": [
+			{
+				"fid": 9
+			}],
+			"fE": [
+			{
+				"fid": 8
+			}],
+			"fW": [
+			{
+				"fid": 7
+			}]
+		}
+	}]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
