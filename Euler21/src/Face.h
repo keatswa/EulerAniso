@@ -97,6 +97,16 @@ public:
 	}
 
 
+	bool get_nbCell(Cell*& c, SIGN sgn) {
+		c = NULL;
+		if (nbCells.find(sgn) == nbCells.end())
+			return(false);
+		else {
+			c = nbCells.find(sgn)->second;
+			return(true);
+		}
+		return(false);
+	}
 
 
 

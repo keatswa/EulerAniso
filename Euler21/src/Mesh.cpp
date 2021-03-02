@@ -9,6 +9,7 @@
 #include "Mesh.h"
 #include <vector>
 #include <iostream>
+#include <climits>
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 
@@ -293,6 +294,56 @@ bool Mesh::refineY(Cell *c0) {
 }
 
 bool Mesh::coarsenX(Face *f, unsigned int lvl) {
+
+	// Face is vertical.  Check cells on either side:
+	Cell *tmpCellNeg = NULL;
+	Cell *tmpCellPos = NULL;
+	// TBD: Simplify using array of [NEG,POS]
+	unsigned int i_neg = UINT_MAX;
+	unsigned int li_neg = UINT_MAX;
+	unsigned int lj_neg = UINT_MAX;
+	unsigned int i_pos = UINT_MAX;
+	unsigned int li_pos = UINT_MAX;
+	unsigned int lj_pos = UINT_MAX;
+
+	// Abort if face is a BC
+	if (f->get_nbCell(tmpCellNeg, NEG)) {   // If a cell exists to the neg side (West if X-refining, South if Y-refining)
+		i_neg = tmpCellNeg->get_i_idx();
+		li_neg = tmpCellNeg->get_li();
+		lj_neg = tmpCellNeg->get_lj();
+	} else {
+		f->faceRefFlags.reset(doCoarsen);
+		return false;   // No cell exists; must be a boundary face.  Cannot x-coarsen.
+	}
+
+	// Abort if face is a BC
+	if (f->get_nbCell(tmpCellNeg, POS)) {
+		i_pos = tmpCellPos->get_i_idx();
+		li_pos = tmpCellPos->get_li();
+		lj_neg = tmpCellPos->get_lj();
+	} else {
+		return false;   // No cell exists; must be a boundary face.  Cannot x-coarsen.
+	}
+
+	// Abort if neg cell i-index not even
+	if (i_neg % 2 > 0) {
+		return false;
+	}
+
+	// Abort if dx not equal
+	if (li_neg != li_pos) {
+		return false;
+	}
+
+	// Abort if current refinement level not at target level
+	if (li_neg != lvl) {
+		return false;
+	}
+
+	// Abort if dy not equal
+	if (lj_neg != lj_pos) {
+		return false;
+	}
 
 
 

@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 	mesh->printMesh();
 	mesh->doUniformRefine(3);  // refine up to refinement level 4 (i.e. final stage refines cells whose reflvl=3)
 
-	mesh->coarsenCells(4);     // coarsen cells whose reflvl = 4
+	mesh->doUniformCoarsen(4);     // coarsen cells whose reflvl = 4
 	mesh->printMesh();
 
 	display->drawMesh(mesh->cellMap, mesh->faceMap);
