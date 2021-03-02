@@ -209,37 +209,12 @@ bool Mesh::refineX(Cell *c0) {
 	Cell *testNbCell = NULL;
 
 	for (auto& d: all_DIR) {
-		if (c0->get_nbFaces().at(d)->front()->get_nbCell(testNbCell, d)) // if a neighbour to the North exists
-			if (testNbCell->get_li() == c0->get_li()-1)                  // if the northern neighbour is twice as wide
-				if (refineX(testNbCell) == false)                        // if unable to refine wider northern neighbour
+		if (c0->get_nbFaces().at(d)->front()->get_nbCell(testNbCell, d)) // if a neighbour to direction 'd' exists
+			if (testNbCell->get_li() == c0->get_li()-1)                  // if the neighbour is twice as wide
+				if (refineX(testNbCell) == false)                        // if unable to refine wider neighbour
 					return false;                                        // give up attempt to refine this cell
 	}
 
-	// Replaces 4 sets of lines below:
-
-//	//   To the North
-//	if (c0->get_nbFaces().at(N)->front()->get_posNbCell(testNbCell)) // if a neighbour to the North exists
-//		if (testNbCell->get_li() == c0->get_li()-1)                  // if the northern neighbour is twice as wide
-//			if (refineX(testNbCell) == false)                        // if unable to refine wider northern neighbour
-//				return false;                                        // give up attempt to refine this cell
-//
-//	//   To the East
-//	if (c0->get_nbFaces().at(E)->front()->get_posNbCell(testNbCell)) // if a neighbour to the East exists
-//		if (testNbCell->get_li() == c0->get_li()-1)                  // if the northern neighbour is twice as wide
-//			if (refineX(testNbCell) == false)                        // if unable to refine wider northern neighbour
-//				return false;                                        // give up attempt to refine this cell
-//
-//	//   To the South
-//	if (c0->get_nbFaces().at(S)->front()->get_negNbCell(testNbCell)) // if a neighbour to the South exists
-//		if (testNbCell->get_li() == c0->get_li()-1)                  // if the northern neighbour is twice as wide
-//			if (refineX(testNbCell) == false)                        // if unable to refine wider northern neighbour
-//				return false;                                        // give up attempt to refine this cell
-//
-//	//   To the West
-//	if (c0->get_nbFaces().at(W)->front()->get_negNbCell(testNbCell)) // if a neighbour to the West exists
-//		if (testNbCell->get_li() == c0->get_li()-1)                  // if the northern neighbour is twice as wide
-//			if (refineX(testNbCell) == false)                        // if unable to refine wider northern neighbour
-//				return false;                                        // give up attempt to refine this cell
 
 	// 3. If above checks are passed, refine cell.
 	//    Halve the size of this cell and add another cell to the South or West.
