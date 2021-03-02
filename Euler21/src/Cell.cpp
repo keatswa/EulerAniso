@@ -57,8 +57,8 @@ refFlags(c.refFlags)
 	cout << "in copy constructor, cid: " << id << endl;
 	for (auto d : all_DIR) {
 		// Do job with e
-//		nbFaces.emplace(d, new FaceDeque());
-		nbFaces[d] = new FaceDeque();
+		nbFaces.emplace(d, new FaceDeque());
+//		nbFaces[d] = new FaceDeque();
 	}
 
 }
