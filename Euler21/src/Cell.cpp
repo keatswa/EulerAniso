@@ -111,7 +111,7 @@ RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0, unsig
 		c0->li++;
 		c1->li++;
 		c0->i_idx *= 2;
-		c1->i_idx *= 2;
+		c1->i_idx = c0->i_idx+1;
 
 		// Look at North and South faces:
 		//  If cell has only one face to the north/south, split that face in two.
@@ -205,7 +205,7 @@ RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0, unsig
 		c0->lj++;
 		c1->lj++;
 		c0->j_idx *= 2;
-		c1->j_idx *= 2;
+		c1->j_idx = c0->j_idx+1;
 
 		// Look at North and South faces:
 		//  If cell has only one face to the north/south, split that face in two.

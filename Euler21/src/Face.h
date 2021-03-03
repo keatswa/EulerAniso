@@ -48,6 +48,15 @@ public:
 	void set_x(cfdFloat _x) { x = _x; }
 	void set_y(cfdFloat _y) { y = _y; }
 
+	void extend() {
+		if (orient == H)
+			x += 0.5*length;
+		else
+			y += 0.5*length;
+
+		length *= 2.0;
+	}
+
 	void connectCell(Cell* c, DIR d);
 
 	// Pass a reference to the pointer in order to guarantee

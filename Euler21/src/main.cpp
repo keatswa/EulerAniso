@@ -37,9 +37,9 @@ int main(int argc, char* argv[]) {
 	io->readJsonIntoMesh(argv[1], mesh);
 
 	mesh->printMesh();
-	mesh->doUniformRefine(3);  // refine up to refinement level 4 (i.e. final stage refines cells whose reflvl=3)
+	mesh->doUniformRefine(3);  // refine up to refinement level 3 (i.e. final stage refines cells whose reflvl=2)
 
-	mesh->doUniformCoarsen(4);     // coarsen cells whose reflvl = 4
+	mesh->doUniformCoarsen(3);     // coarsen cells whose reflvl = 3
 	mesh->printMesh();
 
 	display->drawMesh(mesh->cellMap, mesh->faceMap);
