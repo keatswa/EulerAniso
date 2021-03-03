@@ -85,8 +85,17 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 		int y = Y_SCALE*(-f.second->get_y()+Y_SHIFT);
 
 		SDL_SetRenderDrawColor( renderer, 0x11, 0x11, 0xFF, 0xFF );
-
 		SDL_Rect fillRect = {x-1, y-1, 3, 3};
+
+		if (f.second->faceRefFlags.test(doRecycleFace)) {
+			SDL_SetRenderDrawColor( renderer, 0xFF, 0x11, 0xFF, 0xFF );
+			fillRect.h = 5;
+			fillRect.w = 5;
+			fillRect.x = x-3;
+			fillRect.y = y-3;
+
+		}
+
 		SDL_RenderDrawRect( renderer, &fillRect );
 //		SDL_RenderDrawPoint( renderer, x, y );
 

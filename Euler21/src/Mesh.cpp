@@ -178,9 +178,20 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 				numCoarsened++;
 			}
 		}
+		((display)->*(drawFn))(cellMap, faceMap);
 
 		fit++;
 	}
+
+	forward_list<unsigned int>::iterator recycledFaceIter = recycledFaceIDs.begin();
+	while (recycledFaceIter != recycledFaceIDs.end()) {
+		if (faceMap.find(*recycledFaceIter) != faceMap.end()) {
+			delete faceMap[*recycledFaceIter];
+			faceMap.erase(*recycledFaceIter);
+		}
+		recycledFaceIter++;
+	}
+
 
 
 //	faceIDVec->resize(faceMap.size());
@@ -319,15 +330,23 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 	unsigned int i_neg = UINT_MAX;
 	unsigned int li_neg = UINT_MAX;
 	unsigned int lj_neg = UINT_MAX;
-	unsigned int i_pos = UINT_MAX;
+//	unsigned int i_pos = UINT_MAX;
 	unsigned int li_pos = UINT_MAX;
 	unsigned int lj_pos = UINT_MAX;
+
+
+
+
 
 	// Abort if face is a BC
 	if (f->get_nbCell(c0, NEG)) {   // If a cell exists to the neg side (West if X-refining, South if Y-refining)
 		i_neg = c0->get_i_idx();
 		li_neg = c0->get_li();
 		lj_neg = c0->get_lj();
+
+		// Abort if neg cell i-index not even
+		if (i_neg % 2 > 0)
+			return false;
 
 		// Check neighbouring cell refinement levels
 		// a) North and South
@@ -364,7 +383,7 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 
 	// Abort if face is a BC
 	if (f->get_nbCell(c1, POS)) {
-		i_pos = c1->get_i_idx();
+//		i_pos = c1->get_i_idx();
 		li_pos = c1->get_li();
 		lj_pos = c1->get_lj();
 
@@ -397,11 +416,6 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 		return false;   // No cell exists; must be a boundary face.  Cannot x-coarsen.
 	}
 
-	// Abort if neg cell i-index not even
-	if (i_neg % 2 > 0) {
-		return false;
-	}
-
 	// Abort if dx not equal
 	if (li_neg != li_pos) {
 		return false;
@@ -416,6 +430,7 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 	if (lj_neg != lj_pos) {
 		return false;
 	}
+
 
 	// Finally, Coarsen:
 
@@ -441,8 +456,8 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 				Face *f_toRecycle = c1->nbFaces[d]->back();
 				f_toRecycle->faceRefFlags.set(doRecycleFace);
 				recycledFaceIDs.push_front(f_toRecycle->get_id());
-				faceMap.erase(f_toRecycle->get_id());
-				delete f_toRecycle;
+//				faceMap.erase(f_toRecycle->get_id()); // will invalidate faceMap iterator
+//				delete f_toRecycle;
 				c0->nbFaces[d]->back()->extend();
 
 
@@ -463,8 +478,8 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 			Face *f_toRecycle = c1->nbFaces[d]->back();
 			f_toRecycle->faceRefFlags.set(doRecycleFace);
 			recycledFaceIDs.push_front(f_toRecycle->get_id());
-			faceMap.erase(f_toRecycle->get_id());
-			delete f_toRecycle;
+//			faceMap.erase(f_toRecycle->get_id()); // will invalidate faceMap iterator
+//			delete f_toRecycle;
 			c0->nbFaces[d]->back()->extend();
 
 		}
@@ -475,14 +490,21 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 
 	}
 
-	// 2. Geometric parameters
+	// 2. Map c1's E faces to c0
+	swap(*(c0->nbFaces.at(E)), *(c1->nbFaces.at(E)));
+	// c0 now has c1's E faces.  Go through these faces and connect c0 to them.
+	for_each(c0->nbFaces.at(E)->begin(), c0->nbFaces.at(E)->end(),
+			[&c0](Face *testNbFace) { testNbFace->connectCell(c0, E); });
+
+
+	// 3. Geometric parameters
 	c0->set_x(c0->get_x() + 0.5*c0->get_dx());
 	c0->set_dx(c0->get_dx()*2);
 	c0->set_li(lvl-1);
 	c0->set_i_idx(i_neg/2);
 
 
-	// 3.  Recycle c1 and f
+	// 4.  Recycle c1 and f
 	c1->refFlags.set(doRecycleCell);
 	f->faceRefFlags.set(doRecycleFace);
 
@@ -492,8 +514,8 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 
 
 	recycledFaceIDs.push_front(f->get_id());
-	faceMap.erase(f->get_id());
-	delete f;
+//	faceMap.erase(f->get_id());					// Erasing will invalidate itorator
+//	delete f;
 
 
 
