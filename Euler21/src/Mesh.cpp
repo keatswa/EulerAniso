@@ -109,12 +109,12 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 			}
 		}
 
-		((display)->*(drawFn))(cellMap, faceMap);
+//		((display)->*(drawFn))(cellMap, faceMap);
 // Alternatively, but requires g++-10:
 //		invoke(drawFn, display, cellMap, faceMap); // @suppress("Invalid arguments")
 
 	}
-	cout << "Y-refined " << yRefined << " cells." << endl;
+//	cout << "Y-refined " << yRefined << " cells." << endl;
 
 	// refine in X
 	cellIDVec->resize(cellMap.size());
@@ -132,20 +132,21 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 				xRefined++;
 			}
 		}
-		((display)->*(drawFn))(cellMap, faceMap);
+//		((display)->*(drawFn))(cellMap, faceMap);
 //		std::invoke(drawFn, display, cellMap, faceMap); // @suppress("Invalid arguments")
 
 	}
 
-	cout << "X-refined " << xRefined << " cells." << endl;
+//	cout << "X-refined " << xRefined << " cells." << endl;
 
 	numRefined = xRefined + yRefined;
 
 	// Clean up
 	cellIDVec->clear();
 	delete(cellIDVec);
+	((display)->*(drawFn))(cellMap, faceMap);
 
-	cout << "Refined " << numRefined << " cells." << endl;
+//	cout << "Refined " << numRefined << " cells." << endl;
 	return numRefined;
 }
 
@@ -153,37 +154,56 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 
 	unsigned int numCoarsened = 0;
-	unsigned int i;
+	forward_list<unsigned int>::iterator recycledFaceIter; // = nullptr;
 
-	vector<unsigned int> *faceIDVec = new vector<unsigned int>();
+	// Coarsen in Y
 
-	// Define and populate vector with cell identifiers present in cellMap.
-	// We will operate only on these IDs since new ones will be added to the map.
-
-
-
-	// Coarsen in X
-
-	FaceMap::iterator fit = faceMap.begin();
-
-	while (fit != faceMap.end()) {
-		Face *tgtFace = fit->second;
+	for (auto& f: faceMap) {
+		Face *tgtFace = f.second;
 
 		if (tgtFace->faceRefFlags.test(doCoarsen)
-				&& ( tgtFace->get_orient() == V)
+				&& ( tgtFace->get_orient() == H)
 				&& (!tgtFace->faceRefFlags.test(doRecycleFace)) ) {
-			if (coarsenX(tgtFace, reflvl)) {
+//			if (coarsenX(tgtFace, reflvl)) {
+			if (coarsenFace(tgtFace, reflvl, H)) {
 				tgtFace->faceRefFlags.reset(doCoarsen);
 				tgtFace->faceRefFlags.set(doRecycleFace);
 				numCoarsened++;
 			}
 		}
-		((display)->*(drawFn))(cellMap, faceMap);
-
-		fit++;
+//		((display)->*(drawFn))(cellMap, faceMap);
 	}
 
-	forward_list<unsigned int>::iterator recycledFaceIter = recycledFaceIDs.begin();
+
+	recycledFaceIter = recycledFaceIDs.begin();
+	while (recycledFaceIter != recycledFaceIDs.end()) {
+		if (faceMap.find(*recycledFaceIter) != faceMap.end()) {
+			delete faceMap[*recycledFaceIter];
+			faceMap.erase(*recycledFaceIter);
+		}
+		recycledFaceIter++;
+	}
+
+
+	// Coarsen in X
+
+	for (auto& f: faceMap) {
+		Face *tgtFace = f.second;
+
+		if (tgtFace->faceRefFlags.test(doCoarsen)
+				&& ( tgtFace->get_orient() == V)
+				&& (!tgtFace->faceRefFlags.test(doRecycleFace)) ) {
+//			if (coarsenX(tgtFace, reflvl)) {
+			if (coarsenFace(tgtFace, reflvl, V)) {
+				tgtFace->faceRefFlags.reset(doCoarsen);
+				tgtFace->faceRefFlags.set(doRecycleFace);
+				numCoarsened++;
+			}
+		}
+//		((display)->*(drawFn))(cellMap, faceMap);
+	}
+
+	recycledFaceIter = recycledFaceIDs.begin();
 	while (recycledFaceIter != recycledFaceIDs.end()) {
 		if (faceMap.find(*recycledFaceIter) != faceMap.end()) {
 			delete faceMap[*recycledFaceIter];
@@ -194,6 +214,22 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 
 
 
+
+//	forward_list<unsigned int>::iterator recycledFaceIter = recycledFaceIDs.begin();
+//	while (recycledFaceIter != recycledFaceIDs.end()) {
+//		if (faceMap.find(*recycledFaceIter) != faceMap.end()) {
+//			delete faceMap[*recycledFaceIter];
+//			faceMap.erase(*recycledFaceIter);
+//		}
+//		recycledFaceIter++;
+//	}
+
+
+//	unsigned int i;
+//	vector<unsigned int> *faceIDVec = new vector<unsigned int>();
+//
+//	// Define and populate vector with cell identifiers present in cellMap.
+//	// We will operate only on these IDs since new ones will be added to the map.
 //	faceIDVec->resize(faceMap.size());
 //	i = 0;
 //	for (auto& f: faceMap) {
@@ -217,7 +253,6 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 	cout << "Mesh::coarsenCells: Coarsened " << numCoarsened << " Faces." << endl;
 
 
-
 	((display)->*(drawFn))(cellMap, faceMap);
 
 
@@ -227,7 +262,7 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 
 bool Mesh::refineX(Cell *c0) {
 
-	cout << "X-Refining cell id " << c0->get_id() << endl;
+//	cout << "X-Refining cell id " << c0->get_id() << endl;
 
 	// Test for ability to refine
 	// 1. Check refinement flags
@@ -262,7 +297,7 @@ bool Mesh::refineX(Cell *c0) {
 		unsigned int newFaceID = provideNewFaceID();
 		f->set_id(newFaceID);
 		faceMap[newFaceID] = f;
-		cout << "Added fid " << newFaceID << endl;
+//		cout << "Added fid " << newFaceID << endl;
 	}
 
 	newCellAndFaces.first->clear();
@@ -275,7 +310,7 @@ bool Mesh::refineX(Cell *c0) {
 }
 
 bool Mesh::refineY(Cell *c0) {
-	cout << "Y-Refining cell id " << c0->get_id() << endl;
+//	cout << "Y-Refining cell id " << c0->get_id() << endl;
 
 	// Test for ability to refine
 	// 1. Check refinement flags
@@ -321,6 +356,209 @@ bool Mesh::refineY(Cell *c0) {
 
 }
 
+
+bool Mesh::coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient) {
+
+	Cell *c[2] = {NULL, NULL};   // [0] - c0 - NEG;  [1] - c1 - POS
+	unsigned int i_idx[2] = {UINT_MAX, UINT_MAX};
+	unsigned int j_idx[2] = {UINT_MAX, UINT_MAX};
+	unsigned int li[2]    = {UINT_MAX, UINT_MAX};
+	unsigned int lj[2]    = {UINT_MAX, UINT_MAX};
+
+	unsigned int *idx = NULL;
+	unsigned int *lev = NULL;
+
+	std::initializer_list<DIR> xy_DIR;
+	DIR axisDir[2];
+
+	switch (orient) {
+		case V:      // Vertical face -> Horizontal coarsening
+		{
+			idx = i_idx;   // Cell index points to i-indices
+			lev = li;
+			xy_DIR = std::initializer_list<DIR>(y_DIR);
+			axisDir[0] = W;
+			axisDir[1] = E;
+//			axisDir = {W,E};
+			break;
+		}
+		case H:		// Horizontal face -> Vertical coarsening
+		{
+			idx = j_idx;	// Cell index points to j-indices
+			lev = lj;
+			xy_DIR = std::initializer_list<DIR>(x_DIR);
+//			xy_DIR = x_DIR;
+			axisDir[0] = S;
+			axisDir[1] = N;
+//			axisDir = {S,N};
+			break;
+		}
+	}
+
+
+	for (auto& s: all_SIGN) {
+
+		if (!(f->get_nbCell(c[s], s))) {
+			f->faceRefFlags.reset(doCoarsen);
+			return false;   // No cell exists; must be a boundary face.  Cannot coarsen.
+		} else {
+
+			i_idx[s] = c[s]->get_i_idx();
+			j_idx[s] = c[s]->get_j_idx();
+			li[s] = c[s]->get_li();
+			lj[s] = c[s]->get_lj();
+
+			// Abort if neg cell i-index or j-index not even
+			if (idx[0] % 2 > 0)    // points to i or j index
+				return false;
+
+			// Check neighbouring cell refinement levels
+			// a) North and South if coarsening horizontally
+			for (auto& d: xy_DIR) {
+				if (c[s]->nbFaces[d]->size() > 1)
+					return false;
+			}
+			// b) West cell(s)
+			Cell *tmpCell = NULL;
+
+			for_each(c[s]->nbFaces.at(axisDir[s])->begin(), c[s]->nbFaces.at(axisDir[s])->end(),
+					[&tmpCell,lvl,orient,s](Face *f) -> bool { // Lambda fn
+				if (f->get_nbCell(tmpCell, s)) {
+					if (orient == V) {
+						if (tmpCell->get_li() > lvl) {
+							return false;
+						}
+					} else {
+						if (tmpCell->get_lj() > lvl) {
+							return false;
+						}
+					}
+				}
+				return true;
+			} );   // end for_each
+		} // end if nbCell
+	}  // end for SIGN
+
+
+	// Abort if current refinement level not at target level
+	if (lev[0] != lvl) {
+		return false;
+	}
+
+	// Abort if dx not equal
+	if (li[0] != li[1]) {
+		return false;
+	}
+
+	// Abort if dy not equal
+	if (lj[0] != lj[1]) {
+		return false;
+	}
+
+
+	// Finally, Coarsen:
+
+
+	Cell *c0nb = NULL;
+	Cell *c1nb = NULL;
+
+	// 1. Supply c0 with c1's faces
+	for (auto& d: xy_DIR) {
+		// Case 1:  c0 and c1 share a single cell neighbour in direction 'd'.
+		//          -> disconnect cell neighbour from c1's N face
+		//			-> recycle c1's N face, and extend c0's N face
+
+		bool c0_has_nb = c[0]->nbFaces[d]->back()->get_nbCell(c0nb, d);
+		bool c1_has_nb = c[1]->nbFaces[d]->back()->get_nbCell(c1nb, d);
+
+
+		if (c0_has_nb && c1_has_nb) {                   // c0 and c1 both have a neighbour in direction 'd'
+			if (c0nb->get_id() == c1nb->get_id()) {        // Bingo - c0 and c1 share a single neighbour
+
+				c1nb->nbFaces.at(oppositeDir(d))->pop_back();   // disconnect cell neighbour from c1's face
+
+				Face *f_toRecycle = c[1]->nbFaces[d]->back();
+				f_toRecycle->faceRefFlags.set(doRecycleFace);
+				recycledFaceIDs.push_front(f_toRecycle->get_id());
+//				faceMap.erase(f_toRecycle->get_id()); // will invalidate faceMap iterator
+//				delete f_toRecycle;
+				c[0]->nbFaces[d]->back()->extend();
+
+
+
+			}
+			else {
+	// Case 2:  c0 and c1 have separate cell neighbours in direction 'd'.
+	//          -> reassign c1's N face to c0.  Connect c0 to face and connect face to c0.
+
+				c[1]->nbFaces[d]->back()->connectCell(c[0], d);
+				c[0]->nbFaces[d]->push_back(c[1]->nbFaces[d]->back());
+
+
+			}
+		}
+		else if (!c0_has_nb && !c1_has_nb) {             // Neither cell has a neighbour.  Must lie on a boundary.
+
+			Face *f_toRecycle = c[1]->nbFaces[d]->back();
+			f_toRecycle->faceRefFlags.set(doRecycleFace);
+			recycledFaceIDs.push_front(f_toRecycle->get_id());
+//			faceMap.erase(f_toRecycle->get_id()); // will invalidate faceMap iterator
+//			delete f_toRecycle;
+			c[0]->nbFaces[d]->back()->extend();
+
+		}
+		else {
+			cout << "Coarsening ERROR: one of cells " << c[0]->get_id() << " , " << c[1]->get_id() << " has no neighbour!" << endl;
+			return false;
+		}
+
+	}
+
+	// 2. Map c1's E faces to c0
+	swap(*(c[0]->nbFaces.at(axisDir[1])), *(c[1]->nbFaces.at(axisDir[1])));
+	// c0 now has c1's E faces.  Go through these faces and connect c0 to them.
+	for_each(c[0]->nbFaces.at(axisDir[1])->begin(), c[0]->nbFaces.at(axisDir[1])->end(),
+			[&c,axisDir](Face *testNbFace) { testNbFace->connectCell(c[0], axisDir[1]); });
+
+
+	// 3. Geometric parameters
+	if (orient == V) {
+		c[0]->set_x(c[0]->get_x() + 0.5*c[0]->get_dx());
+		c[0]->set_dx(c[0]->get_dx()*2);
+		c[0]->set_li(lvl-1);
+		c[0]->set_i_idx(i_idx[0]/2);
+	} else {
+		c[0]->set_y(c[0]->get_y() + 0.5*c[0]->get_dy());
+		c[0]->set_dy(c[0]->get_dy()*2);
+		c[0]->set_lj(lvl-1);
+		c[0]->set_j_idx(j_idx[0]/2);
+	}
+
+
+
+
+
+	// 4.  Recycle c1 and f
+	c[1]->refFlags.set(doRecycleCell);
+	f->faceRefFlags.set(doRecycleFace);
+
+	recycledCellIDs.push_front(c[1]->get_id());
+	cellMap.erase(c[1]->get_id());
+	delete c[1];
+
+
+	recycledFaceIDs.push_front(f->get_id());
+//	faceMap.erase(f->get_id());					// Erasing will invalidate itorator
+//	delete f;
+
+
+
+	return true;
+}
+
+
+
+
 bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 
 	// Face is vertical.  Check cells on either side:
@@ -333,9 +571,6 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 //	unsigned int i_pos = UINT_MAX;
 	unsigned int li_pos = UINT_MAX;
 	unsigned int lj_pos = UINT_MAX;
-
-
-
 
 
 	// Abort if face is a BC
@@ -396,7 +631,7 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 		}
 		// b) East cell(s)
 		Cell *tmpCell = NULL;
-		for_each(c0->nbFaces.at(E)->begin(), c0->nbFaces.at(E)->end(),
+		for_each(c1->nbFaces.at(E)->begin(), c1->nbFaces.at(E)->end(),
 				[&tmpCell,lvl](Face *f) -> bool { // Lambda fn
 			if (f->get_nbCell(tmpCell, POS)) {
 				if (tmpCell->get_li() > lvl) {

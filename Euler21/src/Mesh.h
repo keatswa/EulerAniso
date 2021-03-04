@@ -61,6 +61,8 @@ public:
 	bool coarsenX(Face *f, unsigned int lvl);
 	bool coarsenY(Face *f, unsigned int lvl);
 
+	bool coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient);
+
 	// Refine cells whose x/y refinement level is currently 'reflvl'.  Refine in X and then in Y.
 	unsigned int refineCells(unsigned int reflvl);
 

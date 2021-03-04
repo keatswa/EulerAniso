@@ -32,7 +32,7 @@ enum DIR {
 
 constexpr std::initializer_list<DIR> all_DIR = {N,S,W,E};
 constexpr std::initializer_list<DIR>   x_DIR = {    W,E};
-constexpr std::initializer_list<DIR>   y_DIR = {N,S    };
+constexpr std::initializer_list<DIR>   y_DIR = {S,N    };
 
 // Defined in Cell.cpp:
 extern DIR oppositeDir(DIR d);
@@ -67,6 +67,7 @@ enum SIGN {
 	NEG=0, POS=1
 };
 
+constexpr std::initializer_list<SIGN>   all_SIGN = {NEG,POS};
 
 
 enum RefinementFlags

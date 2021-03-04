@@ -33,8 +33,8 @@ DIR oppositeDir(DIR d) {
 
 
 Cell::Cell() {
-	cout << "in constructor, cid: " << id << endl;
-	cout << "nbFaces.size(): " << nbFaces.size() << endl;
+//	cout << "in constructor, cid: " << id << endl;
+//	cout << "nbFaces.size(): " << nbFaces.size() << endl;
 }
 
 
@@ -54,7 +54,7 @@ errY(c.errY),
 refFlags(c.refFlags)
 {
 
-	cout << "in copy constructor, cid: " << id << endl;
+//	cout << "in copy constructor, cid: " << id << endl;
 	for (auto d : all_DIR) {
 		// Do job with e
 		nbFaces.emplace(d, new FaceDeque());
@@ -67,11 +67,11 @@ refFlags(c.refFlags)
 
 Cell::~Cell() {
 
-	cout << "in destructor, cid: " << id << endl;
+//	cout << "in destructor, cid: " << id << endl;
 
 	if (nbFaces.size() > 0)
 	for (auto d : all_DIR) {
-		cout << "Deleting neighbour dir " << d << ": fid: " << nbFaces.at(d)->front()->get_id() << endl;
+//		cout << "Deleting neighbour dir " << d << ": fid: " << nbFaces.at(d)->front()->get_id() << endl;
 		nbFaces.at(d)->clear();
 		delete(nbFaces.at(d));
 	}
@@ -118,7 +118,7 @@ RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0, unsig
 		// Create the new face to the right (back of the deque) of the initial face.
 		for (auto& d: y_DIR) {   // d in {N, S}
 
-			cout << "dir: " << d << ", # faces: " << c0->nbFaces.at(d)->size() << endl;
+//			cout << "dir: " << d << ", # faces: " << c0->nbFaces.at(d)->size() << endl;
 
 			if (c0->nbFaces.at(d)->size() == 1) {
 
@@ -280,7 +280,7 @@ RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0, unsig
 
 	} // end switch(orient)
 
-	cout << "Cell::createRefinedCell: " << c0->id << ", " << c1->id << ": " << newFaces->size() << " faces" << endl;
+//	cout << "Cell::createRefinedCell: " << c0->id << ", " << c1->id << ": " << newFaces->size() << " faces" << endl;
 
 	return(make_pair(newFaces, c1));
 

@@ -16,7 +16,7 @@ Face::Face() {
 
 Face::~Face() {
 	// TODO Auto-generated destructor stub
-	cout << "in destructor, fid: " << id << endl;
+//	cout << "in destructor, fid: " << id << endl;
 }
 
 Face::Face(const Face& f):
@@ -26,7 +26,7 @@ Face::Face(const Face& f):
 		 y(f.y),
 	orient(f.orient)
 {
-	cout << "in copy constructor, fid: " << id << endl;
+//	cout << "in copy constructor, fid: " << id << endl;
 }
 
 // Cell *c is requesting that this face know about it

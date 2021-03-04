@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 	mesh->doUniformCoarsen(3);     // coarsen cells whose reflvl = 3
 	mesh->doUniformCoarsen(2);     // coarsen cells whose reflvl = 2
 	mesh->doUniformCoarsen(1);     // coarsen cells whose reflvl = 1
-	mesh->printMesh();
+//	mesh->printMesh();
 
 	display->drawMesh(mesh->cellMap, mesh->faceMap);
 
