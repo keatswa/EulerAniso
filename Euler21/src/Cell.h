@@ -12,12 +12,13 @@
 #include "Euler.h"
 #include "Face.h"
 #include <bitset>
+#include <iostream>
 
 
 class Cell {
 
 private:
-	unsigned int id;				// Cell ID
+	unsigned long id;				// Cell ID
 	unsigned int li, lj;			// Refinement level
 	unsigned int i_idx, j_idx;		// Integer position index
 
@@ -25,6 +26,11 @@ private:
 	cfdFloat dx, dy;				// Cell dimensions
 	cfdFloat errX, errY;			// Error indicators  TBD: vectorize?
 
+	void generate_id() {
+//		cout << "id: " << id << " -> " ;
+		id = (( ((ulong)i_idx*(2<<li)) << 0x20 ) + ((ulong)j_idx*(2<<lj)));
+//		cout << id << endl;
+	}
 
 
 
@@ -33,25 +39,25 @@ public:
 	Cell(const Cell& c);
 	virtual ~Cell();
 
-	static RefinedCellFaceGroup createRefinedCell(ORIENTATION orient, Cell* c0, unsigned int newCellID);
+	static RefinedCellFaceGroup createRefinedCell(ORIENTATION orient, Cell* c0); //, unsigned int newCellID);
 	NeighbouringFaces nbFaces;		// unordered_map of neighbour faces, indexed by DIR { N, S, W, E }
 
 	bitset<RefinementFlags::NUM_CELLREFINEMENT_FLAGS> refFlags;
 
 	NeighbouringFaces& get_nbFaces() { return(nbFaces); }
 
-	const unsigned int get_id()    const { return(id); }
-	const unsigned int get_i_idx() const { return(i_idx); }
-	const unsigned int get_j_idx() const { return(j_idx); }
-	const unsigned int get_li()    const { return(li); }
-	const unsigned int get_lj()    const { return(lj); }
+	const unsigned long get_id()    const { return(id); }
+	const unsigned  int get_i_idx() const { return(i_idx); }
+	const unsigned  int get_j_idx() const { return(j_idx); }
+	const unsigned  int get_li()    const { return(li); }
+	const unsigned  int get_lj()    const { return(lj); }
 
 	cfdFloat get_x() { return(x); }
 	cfdFloat get_y() { return(y); }
 	cfdFloat get_dx() { return(dx); }
 	cfdFloat get_dy() { return(dy); }
 
-	void set_id(unsigned int _id) { id = _id; }
+	void set_id(unsigned long _id) { id = _id; }
 	void set_i_idx(unsigned int _i_idx) { i_idx = _i_idx; }
 	void set_j_idx(unsigned int _j_idx) { j_idx = _j_idx; }
 	void set_li(unsigned int _li) { li = _li;  }
@@ -65,6 +71,8 @@ public:
 	void init_y(cfdFloat _y) { y = _y; }
 	void init_dx(cfdFloat _dx) { dx = _dx; }
 	void init_dy(cfdFloat _dy) { dy = _dy; }
+	void init_id() { generate_id(); }
+
 
 };
 

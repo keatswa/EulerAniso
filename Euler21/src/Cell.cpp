@@ -80,12 +80,12 @@ Cell::~Cell() {
 }
 
 //STATIC
-RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0, unsigned int newCellID) {
+RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0) { //, unsigned int newCellID) {
 
 	FaceDeque *newFaces = new FaceDeque();
 
 	Cell *c1 = new Cell(*c0);
-	c1->id = newCellID;
+//	c1->id = newCellID;
 
 	c0->refFlags.reset(doRecycleCell);
 	c1->refFlags.reset(doRecycleCell);
@@ -281,6 +281,9 @@ RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0, unsig
 	} // end switch(orient)
 
 //	cout << "Cell::createRefinedCell: " << c0->id << ", " << c1->id << ": " << newFaces->size() << " faces" << endl;
+
+	c1->generate_id();
+
 
 	return(make_pair(newFaces, c1));
 

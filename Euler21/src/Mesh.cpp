@@ -85,7 +85,7 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 	unsigned int xRefined = 0;
 	unsigned int yRefined = 0;
 	unsigned int i;
-	vector<unsigned int> *cellIDVec = new vector<unsigned int>();
+	vector<unsigned long> *cellIDVec = new vector<unsigned long>();
 
 	// Define and populate vector with cell identifiers present in cellMap.
 	// We will operate only on these IDs since new ones will be added to the map.
@@ -93,15 +93,19 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 
 
 	// refine in Y
+//	cout << "Cells to Y-refine: " << endl;
 	cellIDVec->resize(cellMap.size());
 	i = 0;
 	for (auto& c: cellMap) {
 		(*cellIDVec)[i] = c.first;
+//		cout << (*cellIDVec)[i] << " , " ;
 		i++;
 	}
+//	cout << endl;
 
 	for (auto c: (*cellIDVec)) {
-		Cell *tgtCell = cellMap[(*cellIDVec)[c]];
+		Cell *tgtCell = cellMap[c];
+//		Cell *tgtCell = cellMap[(*cellIDVec)[c]];
 
 		if (tgtCell->refFlags.test(doRefineY) && (tgtCell->get_lj() == reflvl)){
 			if (refineY(tgtCell)) {
@@ -114,18 +118,27 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 //		invoke(drawFn, display, cellMap, faceMap); // @suppress("Invalid arguments")
 
 	}
-//	cout << "Y-refined " << yRefined << " cells." << endl;
+	cout << "Y-refined " << yRefined << " cells." << endl;
+
+	cout << "cellMap.size() == " << cellMap.size() << endl;
 
 	// refine in X
+//	cout << "Cells to X-refine: " << endl;
 	cellIDVec->resize(cellMap.size());
 	i = 0;
 	for (auto& c: cellMap) {
 		(*cellIDVec)[i] = c.first;
+//		cout << (*cellIDVec)[i] << " , " ;
 		i++;
 	}
+//	cout << endl;
 
 	for (auto c: (*cellIDVec)) {
-		Cell *tgtCell = cellMap[(*cellIDVec)[c]];
+
+//		cout << "c: " << c << endl;
+
+//		Cell *tgtCell = cellMap[(*cellIDVec)[c]];
+		Cell *tgtCell = cellMap[c];
 
 		if (tgtCell->refFlags.test(doRefineX) && (tgtCell->get_li() == reflvl)){
 			if (refineX(tgtCell)) {
@@ -137,7 +150,8 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 
 	}
 
-//	cout << "X-refined " << xRefined << " cells." << endl;
+	cout << "X-refined " << xRefined << " cells." << endl;
+	cout << "cellMap.size() == " << cellMap.size() << endl;
 
 	numRefined = xRefined + yRefined;
 
@@ -146,7 +160,7 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 	delete(cellIDVec);
 	((display)->*(drawFn))(cellMap, faceMap);
 
-//	cout << "Refined " << numRefined << " cells." << endl;
+	cout << "Refined " << numRefined << " cells." << endl;
 	return numRefined;
 }
 
@@ -154,7 +168,9 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 
 	unsigned int numCoarsened = 0;
-	forward_list<unsigned int>::iterator recycledFaceIter; // = nullptr;
+	unsigned int numCoarsenedX = 0;
+	unsigned int numCoarsenedY = 0;
+	forward_list<unsigned long>::iterator recycledFaceIter; // = nullptr;
 
 	// Coarsen in Y
 
@@ -174,6 +190,9 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 //		((display)->*(drawFn))(cellMap, faceMap);
 	}
 
+	numCoarsenedY = numCoarsened;
+	cout << "Y sweep:  Coarsened " << numCoarsenedY << " Faces." << endl;
+	cout << "cellMap.size() == " << cellMap.size() << endl;
 
 	recycledFaceIter = recycledFaceIDs.begin();
 	while (recycledFaceIter != recycledFaceIDs.end()) {
@@ -202,6 +221,11 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 		}
 //		((display)->*(drawFn))(cellMap, faceMap);
 	}
+
+	numCoarsenedX = numCoarsened - numCoarsenedY;
+	cout << "X sweep:  Coarsened " << numCoarsenedX << " Faces." << endl;
+	cout << "cellMap.size() == " << cellMap.size() << endl;
+
 
 	recycledFaceIter = recycledFaceIDs.begin();
 	while (recycledFaceIter != recycledFaceIDs.end()) {
@@ -250,7 +274,7 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 //			}
 //		}
 //	}
-	cout << "Mesh::coarsenCells: Coarsened " << numCoarsened << " Faces." << endl;
+	cout << "Mesh::coarsenCells: Coarsened " << numCoarsenedX + numCoarsenedY << " Faces." << endl;
 
 
 	((display)->*(drawFn))(cellMap, faceMap);
@@ -286,15 +310,20 @@ bool Mesh::refineX(Cell *c0) {
 
 	//  b) Create new cell to the West
 	//     Static factory method will be used to initialize, set flags, and remap/create faces
-	unsigned int newCellID = provideNewCellID();
-	RefinedCellFaceGroup newCellAndFaces = Cell::createRefinedCell(H, c0, newCellID);
+	RefinedCellFaceGroup newCellAndFaces = Cell::createRefinedCell(H, c0); //, newCellID);
+
+	unsigned long newCellID = newCellAndFaces.second->get_id();
+
+	if (cellMap.find(newCellID) != cellMap.end())
+		cout << "X: Squashing cid " << newCellID << endl;
+
 	cellMap[newCellID] = newCellAndFaces.second;
 
 	// Assign IDs to the new faces and add to the faceMap
 	// Also TBD:  Initialize cell x, y, dx, dy values.
 
 	for (auto& f: (*newCellAndFaces.first)) {
-		unsigned int newFaceID = provideNewFaceID();
+		unsigned long newFaceID = provideNewFaceID(f->get_x(), f->get_y());
 		f->set_id(newFaceID);
 		faceMap[newFaceID] = f;
 //		cout << "Added fid " << newFaceID << endl;
@@ -334,15 +363,17 @@ bool Mesh::refineY(Cell *c0) {
 
 	//  b) Create new cell to the West
 	//     Static factory method will be used to initialize, set flags, and remap/create faces
-	unsigned int newCellID = provideNewCellID();
-	RefinedCellFaceGroup newCellAndFaces = Cell::createRefinedCell(V, c0, newCellID);
+	RefinedCellFaceGroup newCellAndFaces = Cell::createRefinedCell(V, c0); //, newCellID);
+	unsigned long newCellID = newCellAndFaces.second->get_id();
+	if (cellMap.find(newCellID) != cellMap.end())
+		cout << "Y: Squashing cid " << newCellID << endl;
 	cellMap[newCellID] = newCellAndFaces.second;
 
 	// Assign IDs to the new faces and add to the faceMap
 	// Also TBD:  Initialize cell x, y, dx, dy values.
 
 	for (auto& f: (*newCellAndFaces.first)) {
-		unsigned int newFaceID = provideNewFaceID();
+		unsigned long newFaceID = provideNewFaceID(f->get_x(), f->get_y());
 		f->set_id(newFaceID);
 		faceMap[newFaceID] = f;
 	}
@@ -542,13 +573,14 @@ bool Mesh::coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient) {
 	c[1]->refFlags.set(doRecycleCell);
 	f->faceRefFlags.set(doRecycleFace);
 
+//	cout << "Coarsen, recycle cid " << c[1]->get_id()  << endl;
 	recycledCellIDs.push_front(c[1]->get_id());
 	cellMap.erase(c[1]->get_id());
 	delete c[1];
 
 
 	recycledFaceIDs.push_front(f->get_id());
-//	faceMap.erase(f->get_id());					// Erasing will invalidate itorator
+//	faceMap.erase(f->get_id());					// Erasing will invalidate iterator
 //	delete f;
 
 
@@ -749,7 +781,7 @@ bool Mesh::coarsenX(Face *f, unsigned int lvl) {
 
 
 	recycledFaceIDs.push_front(f->get_id());
-//	faceMap.erase(f->get_id());					// Erasing will invalidate itorator
+//	faceMap.erase(f->get_id());					// Erasing will invalidate iterator
 //	delete f;
 
 

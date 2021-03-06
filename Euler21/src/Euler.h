@@ -102,8 +102,8 @@ typedef deque<Face*> FaceDeque;
 typedef unordered_map<DIR, FaceDeque*> NeighbouringFaces;
 typedef unordered_map<SIGN, Cell*> NeighbouringCells;
 
-typedef unordered_map<unsigned int, Cell*> CellMap;
-typedef unordered_map<unsigned int, Face*> FaceMap;
+typedef unordered_map<unsigned long, Cell*> CellMap;
+typedef unordered_map<unsigned long, Face*> FaceMap;
 
 typedef pair<FaceDeque*, Cell*> RefinedCellFaceGroup;
 

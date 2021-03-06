@@ -37,13 +37,20 @@ int main(int argc, char* argv[]) {
 	io->readJsonIntoMesh(argv[1], mesh);
 
 	mesh->printMesh();
-	mesh->doUniformRefine(4);  // refine up to refinement level 3 (i.e. final stage refines cells whose reflvl=2)
-
-	mesh->doUniformCoarsen(4);     // coarsen cells whose reflvl = 4
-	mesh->doUniformCoarsen(3);     // coarsen cells whose reflvl = 3
-	mesh->doUniformCoarsen(2);     // coarsen cells whose reflvl = 2
-	mesh->doUniformCoarsen(1);     // coarsen cells whose reflvl = 1
+//	mesh->init_cell_and_face_IDs();
 //	mesh->printMesh();
+
+
+	mesh->doUniformRefine(2);  // refine up to refinement level 3 (i.e. final stage refines cells whose reflvl=2)
+
+//	mesh->doUniformCoarsen(4);     // coarsen cells whose reflvl = 4
+//	mesh->doUniformCoarsen(3);     // coarsen cells whose reflvl = 3
+//	mesh->doUniformCoarsen(2);     // coarsen cells whose reflvl = 2
+//	mesh->doUniformCoarsen(1);     // coarsen cells whose reflvl = 1
+//	mesh->printMesh();
+
+	// FAILS:
+//	mesh->doUniformRefine(2);  // refine up to refinement level 3 (i.e. final stage refines cells whose reflvl=2)
 
 	display->drawMesh(mesh->cellMap, mesh->faceMap);
 
@@ -52,7 +59,7 @@ int main(int argc, char* argv[]) {
 	}
 
 
-
+	cout << "SUCCESS" << endl;
 
 
 

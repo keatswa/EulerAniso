@@ -15,7 +15,7 @@
 class Face {
 
 private:
-	unsigned int id;				// Face ID
+	unsigned long id;				// Face ID
 
 	cfdFloat length;
 	cfdFloat x, y;
@@ -33,8 +33,8 @@ public:
 	bitset<FaceRefinementFlags::NUM_FACEREFINEMENT_FLAGS> faceRefFlags;
 
 
-	void set_id(unsigned int _id) { id = _id; }
-	const unsigned int get_id() const { return(id); }
+	void set_id(unsigned long _id) { id = _id; }
+	const unsigned long get_id() const { return(id); }
 
 	void set_length(cfdFloat _length) { length = _length; }
 	const cfdFloat get_length() const { return(length); }
