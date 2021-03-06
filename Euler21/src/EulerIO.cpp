@@ -55,10 +55,11 @@ int EulerIO::readJsonIntoMesh(char *jsonFileName, Mesh *mesh) {
 		tmpCell.set_j_idx(jsCells[i]["j"].asUInt());
 		tmpCell.set_li(0);
 		tmpCell.set_lj(0);
+		cout << "cid: " << tmpCell.get_id() ;
 		tmpCell.init_id();                                    // OVERRIDES ABOVE
+		cout << " -> " << tmpCell.get_id() << endl;
 		mesh->init_addCell(tmpCell);
 	}
-
 	// Add Faces to mesh
 	Face tmpFace;
 	for (unsigned int i = 0 ; i < nFaces ; i++)

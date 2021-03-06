@@ -28,7 +28,7 @@ private:
 
 	void generate_id() {
 //		cout << "id: " << id << " -> " ;
-		id = (( ((ulong)i_idx*(2<<li)) << 0x20 ) + ((ulong)j_idx*(2<<lj)));
+		id = (( ((ulong)i_idx+(li<<0x18)) << 0x20 ) + ((ulong)j_idx+(lj<<0x18)));
 //		cout << id << endl;
 	}
 

@@ -158,6 +158,7 @@ unsigned int Mesh::refineCells(unsigned int reflvl) {
 	// Clean up
 	cellIDVec->clear();
 	delete(cellIDVec);
+	cout << "Drawing " << cellMap.size() << " cells, " << faceMap.size() << " faces." << endl;
 	((display)->*(drawFn))(cellMap, faceMap);
 
 	cout << "Refined " << numRefined << " cells." << endl;
@@ -193,6 +194,7 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 	numCoarsenedY = numCoarsened;
 	cout << "Y sweep:  Coarsened " << numCoarsenedY << " Faces." << endl;
 	cout << "cellMap.size() == " << cellMap.size() << endl;
+	cout << "faceMap.size() == " << faceMap.size() << endl;
 
 	recycledFaceIter = recycledFaceIDs.begin();
 	while (recycledFaceIter != recycledFaceIDs.end()) {
@@ -202,7 +204,7 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 		}
 		recycledFaceIter++;
 	}
-
+	recycledFaceIDs.clear();
 
 	// Coarsen in X
 
@@ -225,6 +227,7 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 	numCoarsenedX = numCoarsened - numCoarsenedY;
 	cout << "X sweep:  Coarsened " << numCoarsenedX << " Faces." << endl;
 	cout << "cellMap.size() == " << cellMap.size() << endl;
+	cout << "faceMap.size() == " << faceMap.size() << endl;
 
 
 	recycledFaceIter = recycledFaceIDs.begin();
@@ -235,6 +238,7 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 		}
 		recycledFaceIter++;
 	}
+	recycledFaceIDs.clear();
 
 
 
@@ -276,7 +280,7 @@ unsigned int Mesh::coarsenCells(unsigned int reflvl) {
 //	}
 	cout << "Mesh::coarsenCells: Coarsened " << numCoarsenedX + numCoarsenedY << " Faces." << endl;
 
-
+	cout << "Drawing " << cellMap.size() << " cells, " << faceMap.size() << " faces." << endl;
 	((display)->*(drawFn))(cellMap, faceMap);
 
 
@@ -325,6 +329,10 @@ bool Mesh::refineX(Cell *c0) {
 	for (auto& f: (*newCellAndFaces.first)) {
 		unsigned long newFaceID = provideNewFaceID(f->get_x(), f->get_y());
 		f->set_id(newFaceID);
+
+		if (faceMap.find(newFaceID) != faceMap.end())
+			cout << "X: Squashing fid " << newFaceID << endl;
+
 		faceMap[newFaceID] = f;
 //		cout << "Added fid " << newFaceID << endl;
 	}
@@ -375,6 +383,8 @@ bool Mesh::refineY(Cell *c0) {
 	for (auto& f: (*newCellAndFaces.first)) {
 		unsigned long newFaceID = provideNewFaceID(f->get_x(), f->get_y());
 		f->set_id(newFaceID);
+		if (faceMap.find(newFaceID) != faceMap.end())
+			cout << "Y: Squashing fid " << newFaceID << endl;
 		faceMap[newFaceID] = f;
 	}
 
