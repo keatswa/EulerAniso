@@ -65,11 +65,35 @@ int EulerIO::readJsonIntoMesh(char *jsonFileName, Mesh *mesh) {
 	for (unsigned int i = 0 ; i < nFaces ; i++)
 	{
 		tmpFace.set_id( jsFaces[i]["fid"].asLargestUInt());   // OVERRIDDEN BELOW
+
 		tmpFace.set_length(jsFaces[i]["length"].asDouble());
 		tmpFace.set_x( jsFaces[i]["x"].asDouble());
 		tmpFace.set_y( jsFaces[i]["y"].asDouble());
+		tmpFace.set_is_bc(true);
+		string strBCType = jsFaces[i]["bcType"].asString();
+		if (strBCType.compare("NA") == 0) {
+			tmpFace.set_bcType(NONE);
+			tmpFace.set_is_bc(false);
+		}
+		else if (strBCType.compare("WALL") == 0)
+			tmpFace.set_bcType(WALL);
+		else if (strBCType.compare("INLET") == 0)
+			tmpFace.set_bcType(INLET);
+		else if (strBCType.compare("OUTLET") == 0)
+			tmpFace.set_bcType(OUTLET);
+		else if (strBCType.compare("SYMMETRY") == 0)
+			tmpFace.set_bcType(SYMMETRY);
+		else if (strBCType.compare("PERIODIC") == 0)
+			tmpFace.set_bcType(PERIODIC);
+		else if (strBCType.compare("FREESTREAM") == 0)
+			tmpFace.set_bcType(FREESTREAM);
+		else
+			tmpFace.set_bcType(UNKNOWN);
+
+
+
 		tmpFace.set_id(mesh->provideNewFaceID(tmpFace.get_x(), tmpFace.get_y()));   // OVERRIDES ABOVE
-		mesh->init_addFace(tmpFace);
+		mesh->init_addFace(tmpFace);  // calls copy constructor
 
 		cout << "fid " << tmpFace.get_id() << " -> " << mesh->provideNewFaceID(tmpFace.get_x(), tmpFace.get_y()) << endl;
 	}

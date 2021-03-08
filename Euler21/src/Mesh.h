@@ -232,10 +232,12 @@ public:
 			cout << "fid " << x.first << ": " << x.second->get_id() <<
 					", length: " << x.second->get_length() <<
 					", orient: " << (x.second->get_orient() == H ? "H" : "V") <<  endl;
-			if (x.second->get_negNbCell(tmpCell))
+			if (x.second->get_nbCell(tmpCell, NEG))
 				cout << "  neg cid: " << tmpCell->get_id() << endl;
-			if (x.second->get_posNbCell(tmpCell))
+			if (x.second->get_nbCell(tmpCell, POS))
 				cout << "  pos cid: " << tmpCell->get_id() << endl;
+
+			cout << "BC Type: " << x.second->get_bcType() << endl;
 
 		}
 

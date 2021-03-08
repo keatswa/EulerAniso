@@ -9,9 +9,14 @@
 #include "Euler.h"
 #include <iostream>
 
-Face::Face() {
+Face::Face():
+    id(0)     ,  length(0),
+     x(0)     ,       y(0),
+orient(H)     , bc_type(NONE),
+ is_bc(false)
+{
 	// TODO Auto-generated constructor stub
-
+//	cout << "in default constructor, fid: " << id << endl;
 }
 
 Face::~Face() {
@@ -24,7 +29,9 @@ Face::Face(const Face& f):
     length(f.length),
 		 x(f.x),
 		 y(f.y),
-	orient(f.orient)
+	orient(f.orient),
+   bc_type(f.bc_type),
+	 is_bc(f.is_bc)
 {
 //	cout << "in copy constructor, fid: " << id << endl;
 }

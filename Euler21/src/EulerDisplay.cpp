@@ -108,7 +108,7 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 	}
 
 	SDL_RenderPresent(renderer);
-	SDL_Delay(25);
+	SDL_Delay(50);
 	return(0);
 
 }

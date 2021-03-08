@@ -40,8 +40,8 @@ int main(int argc, char* argv[]) {
 //	mesh->init_cell_and_face_IDs();
 //	mesh->printMesh();
 
-for (int i = 0 ; i < 40 ; i++) {
-	mesh->doUniformRefine(4);  // refine up to refinement level 3 (i.e. final stage refines cells whose reflvl=2)
+for (int i = 0 ; i < 6 ; i++) {
+	mesh->doUniformRefine(4);  //
 
 	mesh->doUniformCoarsen(4);     // coarsen cells whose reflvl = 4
 	mesh->doUniformCoarsen(3);     // coarsen cells whose reflvl = 3
@@ -52,14 +52,20 @@ for (int i = 0 ; i < 40 ; i++) {
 
 	//	mesh->printMesh();
 
-	mesh->doUniformRefine(2);  // refine up to refinement level 3 (i.e. final stage refines cells whose reflvl=2)
+	mesh->doUniformRefine(6);  //
 
 //	mesh->doUniformCoarsen(4);     // coarsen cells whose reflvl = 4
 //	mesh->doUniformCoarsen(3);     // coarsen cells whose reflvl = 3
-	mesh->doUniformCoarsen(2);     // coarsen cells whose reflvl = 2
-	mesh->doUniformCoarsen(1);     // coarsen cells whose reflvl = 1
+//	mesh->doUniformCoarsen(2);     // coarsen cells whose reflvl = 2
+//	mesh->doUniformCoarsen(1);     // coarsen cells whose reflvl = 1
 
 	display->drawMesh(mesh->cellMap, mesh->faceMap);
+
+	cout << "sizeof(Cell): " << sizeof(Cell) << endl;
+	cout << "sizeof(Face): " << sizeof(Face) << endl;
+	cout << "sizeof(Mesh): " << sizeof(Mesh) << endl;
+
+
 
 	while(display->checkQuitEvent() == 0) {
 		SDL_Delay(5);

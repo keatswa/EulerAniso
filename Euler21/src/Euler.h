@@ -79,8 +79,6 @@ enum RefinementFlags
 	wasXRefined,
 	wasYRefined,
 	doRecycleCell,
-//	prevCyclXRefd,	// was x-refined in the previous Cycle
-//	prevCyclYRefd,
 	flaggedRefineX,
 	flaggedRefineY,
 	NUM_CELLREFINEMENT_FLAGS
@@ -94,6 +92,19 @@ enum FaceRefinementFlags
 	NUM_FACEREFINEMENT_FLAGS
 };
 
+
+
+enum BCType
+{
+	WALL,
+	INLET,
+	OUTLET,
+	SYMMETRY,
+	PERIODIC,
+	FREESTREAM,
+	NONE,
+	UNKNOWN
+};
 
 
 

@@ -15,20 +15,29 @@
 class Face {
 
 private:
+	// network topology
 	unsigned long id;				// Face ID
+	NeighbouringCells nbCells;  	// mapped by [NEG, POS]
 
+	// geometry
 	cfdFloat length;
 	cfdFloat x, y;
-
 	ORIENTATION orient;
 
-	NeighbouringCells nbCells;  // mapped by [NEG, POS]
+	// payload
+	BCType bc_type;
+	bool is_bc;
+
 
 public:
 	Face();
 	Face(const Face& f);
 	virtual ~Face();
 
+	void set_bcType(BCType _bc) { bc_type = _bc; }
+	BCType get_bcType() { return bc_type; }
+	void set_is_bc(bool _bc) { is_bc = _bc; }
+	bool get_is_bc() { return is_bc; }
 
 	bitset<FaceRefinementFlags::NUM_FACEREFINEMENT_FLAGS> faceRefFlags;
 
@@ -61,28 +70,6 @@ public:
 
 	// Pass a reference to the pointer in order to guarantee
 	// being able to redirect its pointer address
-	bool get_posNbCell(Cell*& c) {
-		c = NULL;
-		if (nbCells.find(POS) == nbCells.end())
-			return(false);
-		else {
-			c = nbCells.find(POS)->second;
-			return(true);
-		}
-		return(false);
-	}
-
-	bool get_negNbCell(Cell*& c) {
-		c = NULL;
-		if (nbCells.find(NEG) == nbCells.end())
-			return(false);
-		else {
-			c = nbCells.find(NEG)->second;
-			return(true);
-		}
-		return(false);
-	}
-
 
 	bool get_nbCell(Cell*& c, DIR d) {
 		c = NULL;
