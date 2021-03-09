@@ -50,6 +50,12 @@ EulerDisplay::~EulerDisplay() {
 
 }
 
+
+int EulerDisplay::drawMeshNull(CellMap &cm, FaceMap &fm) {
+	return 0;
+}
+
+
 int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 
 	SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );

@@ -18,6 +18,7 @@
 class Cell {
 
 private:
+	friend class Face;
 	unsigned long id;				// Cell ID
 	unsigned int li, lj;			// Refinement level
 	unsigned int i_idx, j_idx;		// Integer position index

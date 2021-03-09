@@ -52,7 +52,7 @@ for (int i = 0 ; i < 6 ; i++) {
 
 	//	mesh->printMesh();
 
-	mesh->doUniformRefine(6);  //
+	mesh->doUniformRefine(4);  //
 
 //	mesh->doUniformCoarsen(4);     // coarsen cells whose reflvl = 4
 //	mesh->doUniformCoarsen(3);     // coarsen cells whose reflvl = 3

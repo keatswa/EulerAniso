@@ -32,6 +32,7 @@ public:
 //	int drawMesh(Mesh &m);
 
 	int drawMesh(CellMap &cm, FaceMap &fm);
+	int drawMeshNull(CellMap &cm, FaceMap &fm);
 
 	int testFn() { cout << "hello" << endl; return(0); }
 

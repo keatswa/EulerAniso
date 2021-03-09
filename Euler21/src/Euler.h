@@ -11,6 +11,8 @@ using namespace std;
 
 #include <deque>
 #include <unordered_map>
+#include <map>
+#include <tsl/robin_map.h>
 #include <tuple>
 #include <functional>
 
@@ -107,16 +109,35 @@ enum BCType
 };
 
 
+enum ConservedVariable
+{
+	CV_DENS = 0,
+	CV_XMOM = 1,
+	CV_YMOM = 2,
+	CV_NRG  = 3
+};
+
 
 typedef float cfdFloat;
 typedef deque<Face*> FaceDeque;
-typedef unordered_map<DIR, FaceDeque*> NeighbouringFaces;
-typedef unordered_map<SIGN, Cell*> NeighbouringCells;
+typedef map<DIR, FaceDeque*> NeighbouringFaces;
+typedef map<SIGN, Cell*> NeighbouringCells;
 
+//typedef tsl::robin_map<unsigned long, Cell*> CellMap;
+//typedef tsl::robin_map<unsigned long, Face*> FaceMap;
 typedef unordered_map<unsigned long, Cell*> CellMap;
 typedef unordered_map<unsigned long, Face*> FaceMap;
 
 typedef pair<FaceDeque*, Cell*> RefinedCellFaceGroup;
+
+
+// Cell payload typedefs
+//  ConservedVariables - deque[# timesteps] of vector [# variables = 4 in 2D]
+typedef deque<vector<cfdFloat>> ConservedVariables;  // to be indexed by ConservedVariable
+
+
+
+
 
 typedef int (EulerDisplay::*CB_EulerDisplay_drawFn) (CellMap& cm, FaceMap& fm);
 

@@ -15,6 +15,7 @@
 class Face {
 
 private:
+	friend class Cell;
 	// network topology
 	unsigned long id;				// Face ID
 	NeighbouringCells nbCells;  	// mapped by [NEG, POS]
@@ -27,6 +28,8 @@ private:
 	// payload
 	BCType bc_type;
 	bool is_bc;
+
+
 
 
 public:
