@@ -82,47 +82,9 @@ public:
 	unsigned int coarsenCells(unsigned int reflvl);
 
 	/*
-	 * ID handling for cell and face refinement
-	 *
-	 * - Maintain 2 <forward_list>s, one for recycled Cell IDs and the other for recycled Face IDs.
-	 * - Add Cell IDs and Face IDs to these sets when a coarsening operation takes place.
-	 * - When refining, if forward_list is not empty, then pop a Cell ID/Face ID out the front.
-	 * - If forward_list is empty, then the next available Cell ID should be the size of cellMap.
+	 * ID handling for face refinement
 	 *
 	 */
-
-
-//	unsigned int provideNewCellID() {
-//		unsigned int return_id;
-//		if (!recycledCellIDs.empty()) {
-//			return_id = recycledCellIDs.front();
-//			recycledCellIDs.pop_front();
-//		}
-//		else {
-//			return_id = (unsigned int)(cellMap.size());
-//		}
-//		return(return_id);
-//	}
-//
-//	unsigned int provideNewFaceID() {
-//		unsigned int return_id;
-//		if (!recycledFaceIDs.empty()) {
-//			return_id = recycledFaceIDs.front();
-//			recycledFaceIDs.pop_front();
-//		}
-//		else {
-//			return_id = (unsigned int)(faceMap.size());
-//		}
-//		return(return_id);
-//	}
-
-
-
-//	ulong provideNewCellID(ulong i, ulong li, ulong j, ulong lj) {
-//		ulong return_id = 0;
-//		return_id =  ( (i*(2<<li)) << 0x20 ) + (j*(2<<lj));
-//		return return_id;
-//	}
 
 	ulong provideNewFaceID(cfdFloat x, cfdFloat y) {
 		ulong return_id = 0;
@@ -191,26 +153,6 @@ public:
 			faceMap.at(faceID)->set_orient(V);
 
 	}
-
-// DEPRECATE
-//	void init_cell_and_face_IDs() {
-//
-//		for (auto& f: faceMap){
-//			Face *tf = f.second;
-//			auto nh = faceMap.extract(f.first);
-//			tf->set_id(provideNewFaceID(tf->get_x(), tf->get_y()));
-//			nh.key() = tf->get_id();
-//			faceMap.insert(move(nh));
-//		}
-//
-//		for (auto& c: cellMap) {
-//			Cell *tc = c.second;
-//			auto nh = cellMap.extract(c.first);
-//			tc->init_id();
-//			nh.key() = tc->get_id();
-//			cellMap.insert(move(nh));
-//		}
-//	}
 
 
 

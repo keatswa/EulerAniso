@@ -11,6 +11,7 @@
 
 #include "Euler.h"
 #include "Face.h"
+#include "Payload.h"
 #include <bitset>
 #include <iostream>
 
@@ -34,11 +35,18 @@ private:
 	}
 
 
+	PayloadVar *U;
+
+
 
 public:
 	Cell();
 	Cell(const Cell& c);
 	virtual ~Cell();
+
+
+	PayloadVar* get_U() { return U; }
+
 
 	static RefinedCellFaceGroup createRefinedCell(ORIENTATION orient, Cell* c0); //, unsigned int newCellID);
 	NeighbouringFaces nbFaces;		// unordered_map of neighbour faces, indexed by DIR { N, S, W, E }

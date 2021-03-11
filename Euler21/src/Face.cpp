@@ -7,7 +7,9 @@
 
 #include "Face.h"
 #include "Euler.h"
+#include "Payload.h"
 #include <iostream>
+
 
 Face::Face():
     id(0)     ,  length(0),
@@ -15,8 +17,7 @@ Face::Face():
 orient(H)     , bc_type(NONE),
  is_bc(false)
 {
-	// TODO Auto-generated constructor stub
-//	cout << "in default constructor, fid: " << id << endl;
+	F = PayloadFlux::Create(PayloadVar::getProblemType());
 }
 
 Face::~Face() {
@@ -34,6 +35,9 @@ Face::Face(const Face& f):
 	 is_bc(f.is_bc)
 {
 //	cout << "in copy constructor, fid: " << id << endl;
+	F = PayloadFlux::Create(PayloadVar::getProblemType());
+	F = f.F->Clone();
+
 }
 
 // Cell *c is requesting that this face know about it

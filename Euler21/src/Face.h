@@ -8,14 +8,15 @@
 #ifndef FACE_H_
 #define FACE_H_
 
+//#include "Cell.h"
 #include "Euler.h"
+#include "Payload.h"
 #include <bitset>
 
 
 class Face {
 
 private:
-	friend class Cell;
 	// network topology
 	unsigned long id;				// Face ID
 	NeighbouringCells nbCells;  	// mapped by [NEG, POS]
@@ -26,8 +27,11 @@ private:
 	ORIENTATION orient;
 
 	// payload
+
 	BCType bc_type;
 	bool is_bc;
+
+	PayloadFlux *F;
 
 
 
@@ -36,6 +40,21 @@ public:
 	Face();
 	Face(const Face& f);
 	virtual ~Face();
+
+	// Calculate fluxes
+	// To be called from Mesh/Solver which provides ConsVar either at opposing cell centers
+	// or interpolated to faces if using a higher order scheme.
+	int calcInterfaceFluxes(cfdFloat order, PayloadVar *cvNeg, PayloadVar *cvPos ) {
+
+		F->calcFluxes(cvNeg, cvPos);
+
+		return 0;
+	}
+
+
+
+
+
 
 	void set_bcType(BCType _bc) { bc_type = _bc; }
 	BCType get_bcType() { return bc_type; }
@@ -114,5 +133,8 @@ public:
 	static Face* createIntermediateFace(ORIENTATION orient, Cell *c0, Cell *c1);
 
 };
+
+
+
 
 #endif /* FACE_H_ */

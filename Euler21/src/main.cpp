@@ -8,8 +8,10 @@
 
 using namespace std;
 
-
-
+// Check memory usage:
+//
+// pmap -x `ps x | grep Euler21 | grep meshtest | awk '{print $1}'`
+//
 
 
 #include "Mesh.h"
@@ -20,6 +22,7 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
 
+	PayloadVar::setProblemType(GAS_DYNAMICS);
 
 	cout << "argv[1]: " << argv[1] << endl;
 

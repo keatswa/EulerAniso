@@ -20,6 +20,11 @@ using namespace std;
 class Face;
 class Cell;
 class EulerDisplay;
+class GasDynFlux;
+class GasDynVar;
+
+const int nEqn = 4;
+
 
 enum ORIENTATION {
 	H=0, V=1
@@ -39,37 +44,12 @@ constexpr std::initializer_list<DIR>   y_DIR = {S,N    };
 // Defined in Cell.cpp:
 extern DIR oppositeDir(DIR d);
 
-//DIR oppositeDir(DIR d) {
-//	DIR oppDir;
-//
-//	switch (d) {
-//	case N:
-//		oppDir = S;
-//		break;
-//	case E:
-//		oppDir = W;
-//		break;
-//	case S:
-//		oppDir = N;
-//		break;
-//	case W:
-//		oppDir = E;
-//		break;
-//	}
-//
-//	return(oppDir);
-//
-//}
-
-//for (auto& d : all_DIR) {
-//    // Do job with d
-//}
 
 enum SIGN {
 	NEG=0, POS=1
 };
 
-constexpr std::initializer_list<SIGN>   all_SIGN = {NEG,POS};
+constexpr std::initializer_list<SIGN> all_SIGN = {NEG,POS};
 
 
 enum RefinementFlags
@@ -109,14 +89,6 @@ enum BCType
 };
 
 
-enum ConservedVariable
-{
-	CV_DENS = 0,
-	CV_XMOM = 1,
-	CV_YMOM = 2,
-	CV_NRG  = 3
-};
-
 
 typedef float cfdFloat;
 typedef deque<Face*> FaceDeque;
@@ -128,17 +100,19 @@ typedef map<SIGN, Cell*> NeighbouringCells;
 typedef unordered_map<unsigned long, Cell*> CellMap;
 typedef unordered_map<unsigned long, Face*> FaceMap;
 
+// The process of refining a Cell will return a new Cell and one or more new Face objects.
+// RefinedCellFaceGroup is used as a return type.
 typedef pair<FaceDeque*, Cell*> RefinedCellFaceGroup;
+
+
+typedef int (EulerDisplay::*CB_EulerDisplay_drawFn) (CellMap& cm, FaceMap& fm);
 
 
 // Cell payload typedefs
 //  ConservedVariables - deque[# timesteps] of vector [# variables = 4 in 2D]
-typedef deque<vector<cfdFloat>> ConservedVariables;  // to be indexed by ConservedVariable
 
+//typedef GasDynFlux Flux;
+//typedef GasDynVar  ConsVar;
 
-
-
-
-typedef int (EulerDisplay::*CB_EulerDisplay_drawFn) (CellMap& cm, FaceMap& fm);
 
 #endif /* EULER_H_ */
