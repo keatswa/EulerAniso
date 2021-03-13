@@ -9,6 +9,7 @@
 #define EULERIO_H_
 
 
+#include "Solver.h"
 #include "Mesh.h"
 #include "json/json.h"
 #include <fstream>
@@ -26,7 +27,7 @@ public:
 	int writeMeshToJson(char* jsonFileName, const Mesh& mesh);
 
 
-
+	int readPhysParamsIntoSolver(char *jsonFileName, Solver *solver);
 
 
 

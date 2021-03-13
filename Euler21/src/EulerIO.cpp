@@ -161,9 +161,109 @@ int EulerIO::readJsonIntoMesh(char *jsonFileName, Mesh *mesh) {
 
 
 
-
-
 int EulerIO::writeMeshToJson(char *jsonFileName, const Mesh &mesh) {
 
 	return(0);
 }
+
+
+
+
+
+
+
+int EulerIO::readPhysParamsIntoSolver(char *jsonFileName, Solver *solver) {
+
+
+	Json::Value root;
+	fstream ifs;
+	ifs.open(jsonFileName);
+
+
+	Json::CharReaderBuilder builder;
+	builder["collectComments"] = true;
+	JSONCPP_STRING errs;
+	if (!parseFromStream(builder, ifs, &root, &errs)) {
+		std::cout << errs << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	solver->setSolverParams(root["reflevelMax"].asInt(),
+							root["reflevelMin"].asInt(),
+							root["errorTol"].asDouble(),
+							root["dt"].asDouble(),
+							root["tEnd"].asDouble(),
+							root["maxCFL"].asDouble(),
+							root["maxIter"].asInt()        );
+
+
+
+	string caseName = root["case"].asString();
+
+	if (caseName.compare("BackwardStep") == 0) {
+
+		// Set up backward step params in Solver
+		solver->setBackwardStepParams(root["rho0"].asDouble(),
+									    root["u0"].asDouble(),
+									    root["v0"].asDouble(),
+									    root["p0"].asDouble(),
+									  root["rho1"].asDouble(),
+									    root["u1"].asDouble(),
+									    root["v1"].asDouble(),
+									    root["p1"].asDouble() );
+
+		solver->assignBackwardStepICs();
+
+
+	} else if (caseName.compare("ForwardStep") == 0) {
+
+
+
+
+	} else {
+		cout << "Unknown case. " << endl;
+		return EXIT_FAILURE;
+	}
+
+
+
+	Json::Value jsInlets = root["inlets"];
+	unsigned int nInlets = jsInlets.size();
+
+	for (unsigned int i = 0 ; i < nInlets ; i++)
+	{
+
+		solver->setInletCondition(jsInlets[i]["fid"].asLargestUInt(),
+ 								  jsInlets[i]["rho"].asDouble(),
+								  jsInlets[i]["u"].asDouble(),
+								  jsInlets[i]["v"].asDouble(),
+								  jsInlets[i]["p"].asDouble());
+
+	}
+
+
+
+
+
+
+	return 0;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

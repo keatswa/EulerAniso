@@ -25,7 +25,6 @@ class GasDynVar;
 
 const int nEqn = 4;
 
-
 enum ORIENTATION {
 	H=0, V=1
 };
@@ -113,6 +112,6 @@ typedef int (EulerDisplay::*CB_EulerDisplay_drawFn) (CellMap& cm, FaceMap& fm);
 
 //typedef GasDynFlux Flux;
 //typedef GasDynVar  ConsVar;
-
+const cfdFloat GAMMA = 1.4;
 
 #endif /* EULER_H_ */

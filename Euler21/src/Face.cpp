@@ -35,7 +35,6 @@ Face::Face(const Face& f):
 	 is_bc(f.is_bc)
 {
 //	cout << "in copy constructor, fid: " << id << endl;
-	F = PayloadFlux::Create(PayloadVar::getProblemType());
 	F = f.F->Clone();
 
 }

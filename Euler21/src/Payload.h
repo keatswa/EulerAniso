@@ -34,6 +34,14 @@ constexpr std::initializer_list<ConservedVariable> all_CV = {CV_DENS, CV_XMOM, C
 
 
 
+enum PrimitiveVariable
+{
+	PV_XVEL,
+	PV_YVEL,
+	PV_PRES,
+	PV_A
+};
+
 
 
 
@@ -41,20 +49,36 @@ constexpr std::initializer_list<ConservedVariable> all_CV = {CV_DENS, CV_XMOM, C
 class PayloadVar {
 
 private:
-
 	inline static ProblemType problemType = GAS_DYNAMICS;  // default problemType
 
+
+
 public:
+	inline const static int N_CV = 4;  // Number of conservative vars
+	inline const static int N_PV = 4;  // Number of primitive vars
+
 	PayloadVar();
-	virtual ~PayloadVar() = 0;
+	PayloadVar(const PayloadVar& var);
+	virtual ~PayloadVar();
 
-	inline static void setProblemType(ProblemType pt) {
-		problemType = pt;
-	}
+	// "Virtual" constructor
+	static PayloadVar* Create(ProblemType pt);
 
-	inline static ProblemType getProblemType() {
-		return problemType;
-	}
+	// "Virtual" copy constructor
+	virtual PayloadVar* Clone() = 0;
+
+
+	inline static void setProblemType(ProblemType pt) { problemType = pt; }
+	inline static ProblemType getProblemType() { return problemType; }
+
+
+
+
+protected:
+	cfdFloat U[N_CV];
+	cfdFloat PV[N_PV];
+
+
 
 };
 
@@ -62,7 +86,16 @@ public:
 
 
 class GasDynVar: public PayloadVar {
+private:
 
+
+public:
+	GasDynVar();
+	GasDynVar(const GasDynVar& var);
+
+	PayloadVar* Clone() {
+		return new GasDynVar(*this);
+	}
 
 
 };
@@ -76,7 +109,6 @@ class ShallowWaterVar: public PayloadVar {
 };
 
 
-//typedef GasDynVar  ConsVar;
 
 
 //*****************************************************************************
@@ -111,6 +143,7 @@ public:
 	virtual int calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) = 0;
 
 
+	virtual void setBCFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) = 0;
 
 
 
@@ -146,6 +179,32 @@ public:
 		return 0;
 	}
 
+
+	void setBCFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) {
+
+		cfdFloat rho = pv[0];
+		cfdFloat   u = pv[1];
+		cfdFloat   v = pv[2];
+		cfdFloat   p = pv[3];
+
+		switch (orient) {
+		case V:     // x-fluxes
+			F[0] = rho*u;
+			F[1] = rho*u*u + p;
+			F[2] = rho*u*v;
+			F[3] = u*(p+((p/(GAMMA-1.0)) + 0.5*rho*(u*u + v*v)));
+			break;
+		case H:
+			F[0] = rho*v;
+			F[1] = rho*v*u;
+			F[2] = rho*v*v + p;
+			F[3] = v*(p+((p/(GAMMA-1.0)) + 0.5*rho*(u*u + v*v)));
+			break;
+		}
+
+
+
+	}
 };
 
 

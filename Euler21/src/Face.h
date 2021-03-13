@@ -17,6 +17,7 @@
 class Face {
 
 private:
+	friend class Cell;
 	// network topology
 	unsigned long id;				// Face ID
 	NeighbouringCells nbCells;  	// mapped by [NEG, POS]
@@ -27,10 +28,8 @@ private:
 	ORIENTATION orient;
 
 	// payload
-
 	BCType bc_type;
 	bool is_bc;
-
 	PayloadFlux *F;
 
 
@@ -45,16 +44,18 @@ public:
 	// To be called from Mesh/Solver which provides ConsVar either at opposing cell centers
 	// or interpolated to faces if using a higher order scheme.
 	int calcInterfaceFluxes(cfdFloat order, PayloadVar *cvNeg, PayloadVar *cvPos ) {
-
 		F->calcFluxes(cvNeg, cvPos);
-
 		return 0;
 	}
 
 
+	// Calculate boundary fluxes by passing the single neighbouring cell's PayloadVar and its
+	// location relative to this face
+	int calcBCFluxes();
 
-
-
+	void setBCFlux(cfdFloat *inletPV) {
+		F->setBCFluxFromPrimitives(inletPV, orient);
+	}
 
 	void set_bcType(BCType _bc) { bc_type = _bc; }
 	BCType get_bcType() { return bc_type; }
@@ -88,11 +89,13 @@ public:
 		length *= 2.0;
 	}
 
+	// Cell *c is requesting that this face know about it
+	// DIR d:  direction of Face from Cell *c's POV
 	void connectCell(Cell* c, DIR d);
+
 
 	// Pass a reference to the pointer in order to guarantee
 	// being able to redirect its pointer address
-
 	bool get_nbCell(Cell*& c, DIR d) {
 		c = NULL;
 		if (d == N || d == E) {

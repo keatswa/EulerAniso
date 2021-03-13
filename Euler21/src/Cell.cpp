@@ -35,6 +35,9 @@ DIR oppositeDir(DIR d) {
 Cell::Cell() {
 //	cout << "in constructor, cid: " << id << endl;
 //	cout << "nbFaces.size(): " << nbFaces.size() << endl;
+
+	U = PayloadVar::Create(PayloadVar::getProblemType());
+
 }
 
 
@@ -60,6 +63,8 @@ refFlags(c.refFlags)
 		nbFaces.emplace(d, new FaceDeque());
 //		nbFaces[d] = new FaceDeque();
 	}
+
+	U = c.U->Clone();
 
 }
 
