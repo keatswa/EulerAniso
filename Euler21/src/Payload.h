@@ -29,23 +29,22 @@ enum ConservedVariable
 	CV_NRG  = 3,
 	NUM_CONSERVED_VARS = 4
 };
-
 constexpr std::initializer_list<ConservedVariable> all_CV = {CV_DENS, CV_XMOM, CV_YMOM, CV_NRG};
-
 
 
 enum PrimitiveVariable
 {
-	PV_XVEL,
-	PV_YVEL,
-	PV_PRES,
-	PV_A
+	PV_RHO = 0,
+	PV_U   = 1,
+	PV_V   = 2,
+	PV_P   = 3,
+	PV_A   = 4,
+	NUM_PRIMITIVE_VARS = 5
 };
+constexpr std::initializer_list<PrimitiveVariable> all_PV = {PV_RHO, PV_U, PV_V, PV_P, PV_A};
 
 
 
-
-// Abstract
 class PayloadVar {
 
 private:
@@ -54,8 +53,8 @@ private:
 
 
 public:
-	inline const static int N_CV = 4;  // Number of conservative vars
-	inline const static int N_PV = 4;  // Number of primitive vars
+	inline const static int N_CV = NUM_CONSERVED_VARS;  // Number of conservative vars
+	inline const static int N_PV = NUM_PRIMITIVE_VARS;  // Number of primitive vars
 
 	PayloadVar();
 	PayloadVar(const PayloadVar& var);
@@ -71,13 +70,26 @@ public:
 	inline static void setProblemType(ProblemType pt) { problemType = pt; }
 	inline static ProblemType getProblemType() { return problemType; }
 
+	virtual cfdFloat get_WaveSpeed_x() = 0;
+	virtual cfdFloat get_WaveSpeed_y() = 0;
+
+
+	virtual void setCVFromPrimitives(cfdFloat *pv) = 0;
+
+	virtual cfdFloat get_U(ConservedVariable idx) { return U[idx]; }
+	virtual cfdFloat get_PV(PrimitiveVariable idx) { return PV[idx]; }
+	virtual cfdFloat get_d_PV_x(PrimitiveVariable idx) {return d_PV_x[idx]; }
+	virtual cfdFloat get_d_PV_y(PrimitiveVariable idx) {return d_PV_y[idx]; }
+
+	virtual void resolvePrimitives() = 0;
 
 
 
 protected:
 	cfdFloat U[N_CV];
 	cfdFloat PV[N_PV];
-
+	cfdFloat d_PV_x[PrimitiveVariable::NUM_PRIMITIVE_VARS];
+	cfdFloat d_PV_y[PrimitiveVariable::NUM_PRIMITIVE_VARS];
 
 
 };
@@ -97,6 +109,14 @@ public:
 		return new GasDynVar(*this);
 	}
 
+	void setCVFromPrimitives(cfdFloat *pv);
+
+//	cfdFloat get_U(ConservedVariable idx);
+//	cfdFloat get_PV(PrimitiveVariable idx);
+
+	void resolvePrimitives();
+	cfdFloat get_WaveSpeed_x() { return (abs(PV[PV_U]) + PV[PV_A]); }
+	cfdFloat get_WaveSpeed_y() { return (abs(PV[PV_V]) + PV[PV_A]); }
 
 };
 
@@ -126,7 +146,7 @@ class PayloadFlux {
 
 protected:   // grant access to derived classes but not others
 	cfdFloat F[ConservedVariable::NUM_CONSERVED_VARS];
-
+	cfdFloat d_PV[PrimitiveVariable::NUM_PRIMITIVE_VARS];
 
 
 public:
@@ -142,10 +162,15 @@ public:
 
 	virtual int calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) = 0;
 
+	virtual void setGradient(PayloadVar *cv, ORIENTATION orient);
 
-	virtual void setBCFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) = 0;
+	virtual void zeroGradient();
 
+	virtual void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) = 0;
 
+	virtual void set_d_PV(PrimitiveVariable idx, cfdFloat value) {d_PV[idx] = value; }
+
+	virtual cfdFloat get_d_PV(PrimitiveVariable idx) {return d_PV[idx]; }
 
 
 };
@@ -174,37 +199,17 @@ public:
 
 	int calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) {
 
-		F[0] = 0.0;
-
+		F[0] = 0;
+		// TBD
 		return 0;
 	}
 
 
-	void setBCFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) {
-
-		cfdFloat rho = pv[0];
-		cfdFloat   u = pv[1];
-		cfdFloat   v = pv[2];
-		cfdFloat   p = pv[3];
-
-		switch (orient) {
-		case V:     // x-fluxes
-			F[0] = rho*u;
-			F[1] = rho*u*u + p;
-			F[2] = rho*u*v;
-			F[3] = u*(p+((p/(GAMMA-1.0)) + 0.5*rho*(u*u + v*v)));
-			break;
-		case H:
-			F[0] = rho*v;
-			F[1] = rho*v*u;
-			F[2] = rho*v*v + p;
-			F[3] = v*(p+((p/(GAMMA-1.0)) + 0.5*rho*(u*u + v*v)));
-			break;
-		}
+	// Used for initial conditions
+	void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient);
 
 
 
-	}
 };
 
 

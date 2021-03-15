@@ -32,7 +32,6 @@ private:
 
 	unsigned int maxRefLvl = 0;
 	unsigned int iteration;
-	cfdFloat maxCFL;
 
 	forward_list<unsigned long> recycledCellIDs;
 	forward_list<unsigned long> recycledFaceIDs;
@@ -194,11 +193,6 @@ public:
 	}
 
 
-	void calcFaceFluxes();
-
-	void doCellTimestep (const cfdFloat& dt, int rkStage );
-
-	cfdFloat getMaxCFL() { return maxCFL; }
 
 };
 

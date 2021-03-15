@@ -46,9 +46,18 @@ public:
 
 	PayloadVar* get_U() { return U; }
 
-	void init_U(PayloadVar *_U) {
-		delete(U);
-		U = _U->Clone();
+	cfdFloat get_U(ConservedVariable idx) { return U->get_U(idx); }
+	cfdFloat get_PV(PrimitiveVariable idx) { return U->get_PV(idx); }
+
+
+//	void init_U(PayloadVar *_U) {
+//		delete(U);
+//		U = _U->Clone();
+//	}
+
+
+	void setCVfromPV(cfdFloat *icPVarr){
+		U->setCVFromPrimitives(icPVarr);
 	}
 
 

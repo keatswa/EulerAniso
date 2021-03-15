@@ -90,6 +90,8 @@ enum BCType
 
 
 typedef float cfdFloat;
+typedef int   cfdInt;
+
 typedef deque<Face*> FaceDeque;
 typedef map<DIR, FaceDeque*> NeighbouringFaces;
 typedef map<SIGN, Cell*> NeighbouringCells;

@@ -23,14 +23,16 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
 
+
+	// TBD: set this from json input
 	PayloadVar::setProblemType(GAS_DYNAMICS);
 
 	cout << "argv[1]: " << argv[1] << endl;
 
 	EulerDisplay *display = new EulerDisplay();
 	Mesh *mesh = new Mesh();
-	mesh->set_display(display);
 	CB_EulerDisplay_drawFn drawFn = &EulerDisplay::drawMesh;
+	mesh->set_display(display);
 	mesh->set_cb_drawFn(drawFn);
 	EulerIO *io = new EulerIO();
 
@@ -38,16 +40,21 @@ int main(int argc, char* argv[]) {
 
 
 	Solver *solver = new Solver(mesh);
+	solver->set_display(display);
+	solver->set_cb_drawFn(drawFn);
+
+	// Set solver params, initial conditions, and boundary fluxes
+	// based on the mesh defined in the first input file
 	io->readPhysParamsIntoSolver(argv[2], solver);
 
 
-
+	solver->solve();
 
 
 //	mesh->printMesh();
 //	mesh->init_cell_and_face_IDs();
 //	mesh->printMesh();
-
+/*
 	for (int i = 0 ; i < 10 ; i++) {
 		mesh->doUniformRefine(4);  //
 
@@ -58,8 +65,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	mesh->doUniformRefine(4);
-
-	display->drawMesh(mesh->cellMap, mesh->faceMap);
+*/
+//	display->drawMesh(mesh->cellMap, mesh->faceMap);
 
 	cout << "sizeof(Cell): " << sizeof(Cell) << endl;
 	cout << "sizeof(Face): " << sizeof(Face) << endl;

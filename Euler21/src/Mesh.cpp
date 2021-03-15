@@ -409,7 +409,8 @@ bool Mesh::coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient) {
 	unsigned int *idx = NULL;
 	unsigned int *lev = NULL;
 
-	std::initializer_list<DIR> xy_DIR;
+//	std::initializer_list<DIR> xy_DIR;
+	vector<DIR> xy_DIR;
 	DIR axisDir[2];
 
 	switch (orient) {
@@ -417,7 +418,7 @@ bool Mesh::coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient) {
 		{
 			idx = i_idx;   // Cell index points to i-indices
 			lev = li;
-			xy_DIR = std::initializer_list<DIR>(y_DIR);
+			xy_DIR = y_DIR; //{S,N    }; //std::initializer_list<DIR>(y_DIR);
 			axisDir[0] = W;
 			axisDir[1] = E;
 //			axisDir = {W,E};
@@ -427,7 +428,7 @@ bool Mesh::coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient) {
 		{
 			idx = j_idx;	// Cell index points to j-indices
 			lev = lj;
-			xy_DIR = std::initializer_list<DIR>(x_DIR);
+			xy_DIR = x_DIR; //{    W,E}; //std::initializer_list<DIR>(x_DIR);
 //			xy_DIR = x_DIR;
 			axisDir[0] = S;
 			axisDir[1] = N;

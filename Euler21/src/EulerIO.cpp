@@ -119,33 +119,11 @@ int EulerIO::readJsonIntoMesh(char *jsonFileName, Mesh *mesh) {
 		jsFaceDir = jsFaceIDs["fE"];
 		for (unsigned int j = 0 ; j < jsFaceDir.size() ; j++) {
 			mesh->init_mapFaceToCell(jsCells[i]["cid"].asLargestUInt(), jsFaceDir[j].get("fid", -1).asLargestUInt(), E);
-//TEST			mesh->mapFaceToCell(jsCells[i]["cid"].asUInt(), jsFaceDir[j].get("fid", -1).asUInt(), E);
-//TEST			mesh->mapFaceToCell(jsCells[i]["cid"].asUInt(), jsFaceDir[j].get("fid", -1).asUInt(), E);
 		}
 
 
 	}
 
-
-
-
-
-
-//
-//	for (unsigned int i = 0 ; i < jsCells.size() ; i++)
-//	{
-//		cout << jsCells[i]["cid"] << endl;
-//		cout << jsCells[i]["i"] << endl;
-//		cout << jsCells[i]["j"] << endl;
-//
-//		Json::Value jsFaceIDs = jsCells[i]["faceIDs"];
-//		Json::Value jsFaceN = jsFaceIDs["fN"];
-//		for (unsigned int j = 0 ; j < jsFaceN.size() ; j++)
-//		{
-//	//			cout << jsFaceN[j] << endl;
-//			cout << "fid: " << jsFaceN[j].get("fid", -1).asInt() << endl;
-//		}
-//	}
 
 
 
@@ -198,9 +176,32 @@ int EulerIO::readPhysParamsIntoSolver(char *jsonFileName, Solver *solver) {
 
 
 
+
 	string caseName = root["case"].asString();
 
+	Json::Value jsInlets = root["inlets"];
+	unsigned int nInlets = jsInlets.size();
+
 	if (caseName.compare("BackwardStep") == 0) {
+
+		// Assign inlets to faces first, before assigning initial conditions.
+		// Assignment of initial conditions may require mesh to be refined, so
+		// additional faces would not receive inlet conditions.
+
+		for (unsigned int i = 0 ; i < nInlets ; i++)
+		{
+
+			solver->setInletCondition(jsInlets[i]["fid"].asLargestUInt(),
+									  jsInlets[i]["rho"].asDouble(),
+									  jsInlets[i]["u"].asDouble(),
+									  jsInlets[i]["v"].asDouble(),
+									  jsInlets[i]["p"].asDouble());
+
+		}
+
+
+
+
 
 		// Set up backward step params in Solver
 		solver->setBackwardStepParams(root["rho0"].asDouble(),
@@ -211,6 +212,8 @@ int EulerIO::readPhysParamsIntoSolver(char *jsonFileName, Solver *solver) {
 									    root["u1"].asDouble(),
 									    root["v1"].asDouble(),
 									    root["p1"].asDouble() );
+
+
 
 		solver->assignBackwardStepICs();
 
@@ -226,20 +229,6 @@ int EulerIO::readPhysParamsIntoSolver(char *jsonFileName, Solver *solver) {
 	}
 
 
-
-	Json::Value jsInlets = root["inlets"];
-	unsigned int nInlets = jsInlets.size();
-
-	for (unsigned int i = 0 ; i < nInlets ; i++)
-	{
-
-		solver->setInletCondition(jsInlets[i]["fid"].asLargestUInt(),
- 								  jsInlets[i]["rho"].asDouble(),
-								  jsInlets[i]["u"].asDouble(),
-								  jsInlets[i]["v"].asDouble(),
-								  jsInlets[i]["p"].asDouble());
-
-	}
 
 
 

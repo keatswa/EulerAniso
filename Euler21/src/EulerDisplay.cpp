@@ -72,11 +72,15 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 
 		SDL_SetRenderDrawColor( renderer, 0xFF, 0x00, 0x00, 0x88 );
 
-		if (c.first == 2)
-			SDL_SetRenderDrawColor( renderer, 0x00, 0x00, 0xFF, 0x88 );
+		unsigned char rc = 200*c.second->get_U(CV_DENS);
+		unsigned char gc = 200*c.second->get_U(CV_DENS);
+		unsigned char bc = 200*c.second->get_U(CV_DENS);
+
+		SDL_SetRenderDrawColor( renderer, rc, gc, bc, 0x88 );
 
 		SDL_Rect fillRect = {x, y, (int)dx, (int)dy};
 		SDL_RenderDrawRect( renderer, &fillRect );
+		SDL_RenderFillRect( renderer, &fillRect );
 
 //		cout << c.first << ": (" << x << " , " << y << " , " << dx << " , " << dy << ")" << endl;
 

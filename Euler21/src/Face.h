@@ -40,6 +40,8 @@ public:
 	Face(const Face& f);
 	virtual ~Face();
 
+	PayloadFlux* get_F() { return F; }
+
 	// Calculate fluxes
 	// To be called from Mesh/Solver which provides ConsVar either at opposing cell centers
 	// or interpolated to faces if using a higher order scheme.
@@ -53,9 +55,12 @@ public:
 	// location relative to this face
 	int calcBCFluxes();
 
-	void setBCFlux(cfdFloat *inletPV) {
-		F->setBCFluxFromPrimitives(inletPV, orient);
+	void setBCFlux(cfdFloat *inletPVarr) {
+		F->setFluxFromPrimitives(inletPVarr, orient);
 	}
+
+	// Returns first cell associated with this face.  Will be only cell in nbCells if it's a boundary face.
+	Cell *getBoundaryCell() { return nbCells.begin()->second; }
 
 	void set_bcType(BCType _bc) { bc_type = _bc; }
 	BCType get_bcType() { return bc_type; }
