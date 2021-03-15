@@ -28,23 +28,14 @@ void Solver::calcPVGradientsAtFaces() {
 		Face *f = fp.second;
 
 		if (f->get_is_bc()) {
-
 			if (f->get_bcType() == OUTLET) {
-
 				f->get_F()->zeroGradient();
-
-
 			} else {  // WALL, INLET, ?
 
 				f->get_F()->setGradient(f->getBoundaryCell()->get_U(), f->get_orient());
-
-
 			}
 
-
-
-
-		} else {
+		} else {   // FACE IS NOT A BOUNDARY - calc gradient from nb cells
 
 
 
@@ -103,7 +94,7 @@ cfdFloat Solver::calcMinWavePeriod() {
 
 		// Avoid knowledge of Gasdyn impl in the Solver class.  Get wavespeed from Payload
 		tmpPeriodX = c->get_dx()/c->get_U()->get_WaveSpeed_x();
-		tmpPeriodY = c->get_dx()/c->get_U()->get_WaveSpeed_y();
+		tmpPeriodY = c->get_dy()/c->get_U()->get_WaveSpeed_y();
 
 		tmpPeriod = min(tmpPeriodX, tmpPeriodY);
 

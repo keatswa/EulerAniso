@@ -36,6 +36,10 @@ enum DIR {
 	E=3
 };
 
+enum AXIS {
+	X, Y
+};
+
 constexpr std::initializer_list<DIR> all_DIR = {N,S,W,E};
 constexpr std::initializer_list<DIR>   x_DIR = {    W,E};
 constexpr std::initializer_list<DIR>   y_DIR = {S,N    };
