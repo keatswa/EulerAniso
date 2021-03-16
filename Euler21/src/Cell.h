@@ -82,10 +82,10 @@ public:
 	cfdFloat get_ds_normal(ORIENTATION orient) {
 		switch (orient) {
 		case V:
-			return dy;
+			return dx;
 			break;
 		case H:
-			return dx;
+			return dy;
 			break;
 		}
 		return 0;
