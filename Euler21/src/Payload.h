@@ -81,15 +81,16 @@ public:
 	virtual cfdFloat get_d_PV_x(PrimitiveVariable idx) {return d_PV_x[idx]; }
 	virtual cfdFloat get_d_PV_y(PrimitiveVariable idx) {return d_PV_y[idx]; }
 
+
 	virtual void resolvePrimitives() = 0;
 
 
 
 protected:
-	cfdFloat U[N_CV];
-	cfdFloat PV[N_PV];
-	cfdFloat d_PV_x[PrimitiveVariable::NUM_PRIMITIVE_VARS];
-	cfdFloat d_PV_y[PrimitiveVariable::NUM_PRIMITIVE_VARS];
+	cfdFloat U[NUM_CONSERVED_VARS];
+	cfdFloat PV[NUM_PRIMITIVE_VARS];
+	cfdFloat d_PV_x[NUM_PRIMITIVE_VARS];
+	cfdFloat d_PV_y[NUM_PRIMITIVE_VARS];
 
 
 };
@@ -145,8 +146,9 @@ class PayloadFlux {
 
 
 protected:   // grant access to derived classes but not others
-	cfdFloat F[ConservedVariable::NUM_CONSERVED_VARS];
-	cfdFloat d_PV[PrimitiveVariable::NUM_PRIMITIVE_VARS];
+	cfdFloat F[NUM_CONSERVED_VARS];
+	cfdFloat d_PV[NUM_PRIMITIVE_VARS];
+	cfdFloat d_U[NUM_CONSERVED_VARS];
 
 
 public:
@@ -160,17 +162,22 @@ public:
 	// "Virtual" copy constructor
 	virtual PayloadFlux* Clone() = 0;
 
-	virtual int calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) = 0;
-
-	virtual void setGradient(PayloadVar *cv, ORIENTATION orient);
-
-	virtual void zeroGradient();
-
 	virtual void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) = 0;
 
-	virtual void set_d_PV(PrimitiveVariable idx, cfdFloat value) {d_PV[idx] = value; }
+	virtual void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) = 0;
 
-	virtual cfdFloat get_d_PV(PrimitiveVariable idx) {return d_PV[idx]; }
+	virtual void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient) = 0;
+
+	// Set boundary face gradient from cell-centred gradient
+	void setGradient(PayloadVar *cv, ORIENTATION orient);
+
+	void zeroGradient();
+
+	void set_d_PV(PrimitiveVariable idx, cfdFloat value) {d_PV[idx] = value; }
+
+	cfdFloat get_d_PV(PrimitiveVariable idx) {return d_PV[idx]; }
+
+	void calcGradient(PayloadVar *cvNeg, PayloadVar *cvPos, cfdFloat ds);
 
 
 };
@@ -185,6 +192,12 @@ public:
 class GasDynFlux: public PayloadFlux {
 private:
 
+	cfdFloat a;          // face-averaged speed of sound
+	cfdFloat M;          // fusion of M_plus and M_minus
+	cfdFloat M_plus;
+	cfdFloat M_minus;
+	cfdFloat M_IF;
+	cfdFloat a_IF;
 
 
 public:
@@ -197,13 +210,8 @@ public:
 
 	~GasDynFlux();
 
-	int calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) {
-
-		F[0] = 0;
-		// TBD
-		return 0;
-	}
-
+	void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) ;
+	void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient) ;
 
 	// Used for initial conditions
 	void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient);

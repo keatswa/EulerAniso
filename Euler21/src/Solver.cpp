@@ -24,35 +24,45 @@ void Solver::resolveCellPrimitives() {
 
 void Solver::calcPVGradientsAtFaces() {
 
+	Cell *c = NULL;
+	PayloadVar *cvNeg, *cvPos;
+	cfdFloat ds, ds_neg, ds_pos;
+	ORIENTATION orient;
+
+
 	for (auto& fp: mesh->faceMap) {
 		Face *f = fp.second;
+
+		orient = f->get_orient();
 
 		if (f->get_is_bc()) {
 			if (f->get_bcType() == OUTLET) {
 				f->get_F()->zeroGradient();
 			} else {  // WALL, INLET, ?
-
-				f->get_F()->setGradient(f->getBoundaryCell()->get_U(), f->get_orient());
+				f->get_F()->setGradient(f->getBoundaryCell()->get_U(), orient);
 			}
 
 		} else {   // FACE IS NOT A BOUNDARY - calc gradient from nb cells
 
+			if (f->get_nbCell(c, NEG)) {
+				cvNeg = c->get_U();
+				ds_neg = c->get_ds_normal(orient);
+			}
+			else
+				exit(-1);
 
+			if (f->get_nbCell(c, POS)) {
+				cvPos = c->get_U();
+				ds_pos = c->get_ds_normal(orient);
+			}
+			else
+				exit(-1);
 
+			ds = ds_pos + ds_neg;
 
-
+			f->get_F()->calcGradient(cvNeg, cvPos, ds);
 		}
-
-
-
-
-
 	}
-
-
-
-
-
 }
 
 void Solver::limitCellGradients() {

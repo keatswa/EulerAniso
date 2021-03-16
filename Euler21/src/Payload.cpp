@@ -152,6 +152,7 @@ PayloadFlux::~PayloadFlux() {
 }
 
 
+// Set boundary face gradient from cell-centred gradient
 void PayloadFlux::setGradient(PayloadVar *cv, ORIENTATION orient) {
 
 	if (orient == V) {
@@ -173,6 +174,24 @@ void PayloadFlux::zeroGradient() {
 }
 
 
+void PayloadFlux::calcGradient(PayloadVar *cvNeg, PayloadVar *cvPos, cfdFloat ds) {
+
+	cfdFloat ds_inv = 1.0/ds;
+
+	for (auto& idx: all_PV) {
+		d_PV[idx] = ds_inv*(cvPos->get_PV(idx) - cvNeg->get_PV(idx));
+	}
+
+
+	for (auto& idx: all_CV) {
+		d_U[idx] = ds_inv*(cvPos->get_U(idx) - cvNeg->get_U(idx));
+	}
+
+
+}
+
+
+
 GasDynFlux::GasDynFlux() {
 }
 
@@ -185,6 +204,30 @@ GasDynFlux::GasDynFlux(const GasDynFlux &flux) : PayloadFlux(flux) {
 
 GasDynFlux::~GasDynFlux() {
 }
+
+
+
+
+void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) {
+
+
+
+
+
+}
+
+
+void GasDynFlux::setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient) {
+
+
+
+
+
+}
+
+
+
+
 
 
 // Used for initial conditions

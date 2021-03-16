@@ -79,6 +79,18 @@ public:
 	cfdFloat get_dx() { return(dx); }
 	cfdFloat get_dy() { return(dy); }
 
+	cfdFloat get_ds_normal(ORIENTATION orient) {
+		switch (orient) {
+		case V:
+			return dy;
+			break;
+		case H:
+			return dx;
+			break;
+		}
+		return 0;
+	}
+
 	void set_id(unsigned long _id) { id = _id; }
 	void set_i_idx(unsigned int _i_idx) { i_idx = _i_idx; }
 	void set_j_idx(unsigned int _j_idx) { j_idx = _j_idx; }
