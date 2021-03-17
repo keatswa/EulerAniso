@@ -81,6 +81,7 @@ public:
 	virtual cfdFloat get_d_PV_x(PrimitiveVariable idx) {return d_PV_x[idx]; }
 	virtual cfdFloat get_d_PV_y(PrimitiveVariable idx) {return d_PV_y[idx]; }
 
+	virtual void update_U(cfdFloat *newU) { for (auto& idx: all_CV) { U[idx] = newU[idx]; } }
 
 	virtual void resolvePrimitives() = 0;
 
@@ -166,7 +167,7 @@ public:
 
 	virtual void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) = 0;
 
-	virtual void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient) = 0;
+	virtual void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bcType) = 0;
 
 	// Set boundary face gradient from cell-centred gradient
 	void setGradient(PayloadVar *cv, ORIENTATION orient);
@@ -179,6 +180,7 @@ public:
 
 	void calcGradient(PayloadVar *cvNeg, PayloadVar *cvPos, cfdFloat ds);
 
+	cfdFloat *get_F() { return F; }
 
 };
 
@@ -211,12 +213,13 @@ public:
 	~GasDynFlux();
 
 	void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) ;
-	void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient) ;
+	void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bcType) ;
 
 	// Used for initial conditions
 	void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient);
 
-
+	void calcAUSMPlusSplitMachNumber();
+	void calcAUSMPlusSplitFluxes();
 
 };
 

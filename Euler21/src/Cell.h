@@ -19,6 +19,7 @@
 class Cell {
 
 private:
+	friend class Mesh;
 	unsigned long id;				// Cell ID
 	unsigned int li, lj;			// Refinement level
 	unsigned int i_idx, j_idx;		// Integer position index
@@ -33,36 +34,29 @@ private:
 //		cout << id << endl;
 	}
 
+	NeighbouringFaces nbFaces;		// unordered_map of neighbour faces, indexed by DIR { N, S, W, E }
 
 	PayloadVar *U;
 
-
+	// Keep a static copy of dt to avoid passing it
+	inline static cfdFloat dt = -1;
 
 public:
 	Cell();
 	Cell(const Cell& c);
 	virtual ~Cell();
 
+	inline static void set_dt(cfdFloat _dt) { dt = _dt; }
 
 	PayloadVar* get_U() { return U; }
 
 	cfdFloat get_U(ConservedVariable idx) { return U->get_U(idx); }
 	cfdFloat get_PV(PrimitiveVariable idx) { return U->get_PV(idx); }
 
-
-//	void init_U(PayloadVar *_U) {
-//		delete(U);
-//		U = _U->Clone();
-//	}
-
-
-	void setCVfromPV(cfdFloat *icPVarr){
-		U->setCVFromPrimitives(icPVarr);
-	}
+	void setCVfromPV(cfdFloat *icPVarr){ U->setCVFromPrimitives(icPVarr); }
 
 
 	static RefinedCellFaceGroup createRefinedCell(ORIENTATION orient, Cell* c0); //, unsigned int newCellID);
-	NeighbouringFaces nbFaces;		// unordered_map of neighbour faces, indexed by DIR { N, S, W, E }
 
 	bitset<RefinementFlags::NUM_CELLREFINEMENT_FLAGS> refFlags;
 
@@ -79,6 +73,7 @@ public:
 	cfdFloat get_dx() { return(dx); }
 	cfdFloat get_dy() { return(dy); }
 
+	// Get cell dimension {dx,dy} normal to face at given orientation
 	cfdFloat get_ds_normal(ORIENTATION orient) {
 		switch (orient) {
 		case V:

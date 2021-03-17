@@ -79,17 +79,102 @@ void Solver::limitCellGradients() {
 
 
 void Solver::calcFaceFluxes() {
+
+	ORIENTATION orient;
+	Cell *c = NULL;
+	PayloadVar *cvNeg, *cvPos;
+
+
 	for (auto& fp: mesh->faceMap) {
 		Face *f = fp.second;
 
-		// do stuff
+
+		orient = f->get_orient();
+
+		if (f->get_is_bc()) {
+
+			f->get_F()->setBoundaryFluxes(f->getBoundaryCell()->get_U(), orient, f->get_bcType());
+
+
+
+		} else {   // FACE IS NOT A BOUNDARY
+
+			if (f->get_nbCell(c, NEG)) {
+				cvNeg = c->get_U();
+			}
+			else
+				exit(-1);
+
+			if (f->get_nbCell(c, POS)) {
+				cvPos = c->get_U();
+			}
+			else
+				exit(-1);
+
+
+			f->get_F()->calcFluxes(cvNeg, cvPos);
+
+
+		}
 
 	}
 
 }
 
 void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
+
+	cfdFloat dx, dy;
+	int fcnt;
+	cfdFloat flux[4][PayloadVar::N_CV];
+	cfdFloat newU[PayloadVar::N_CV];
+
+	for (auto& cp: mesh->cellMap) {
+		Cell *c = cp.second;
+
+		dx = c->get_dx();
+		dy = c->get_dy();
+
+		for (auto& d: all_DIR) {
+
+			for (auto& idx: all_CV) { flux[d][idx] = 0.0; }
+
+			fcnt = 1;
+			for_each(c->get_nbFaces().at(d)->begin(), c->get_nbFaces().at(d)->end(),
+						[&c, &flux, &d, &fcnt] (Face *f)
+			{
+				cfdFloat *tmpFlux = f->get_F()->get_F();
+				for (auto& idx: all_CV) {
+					flux[d][idx] += tmpFlux[idx];
+					flux[d][idx] /= fcnt;
+				}
+				fcnt++;
+			});
+
+		} // for DIR
+
+
+		for (auto& idx: all_CV) {
+			newU[idx] = c->get_U(idx) - (dt/dx)*(flux[E][idx] - flux[W][idx])
+					                  - (dt/dy)*(flux[N][idx] - flux[S][idx]);
+		}
+
+		c->get_U()->update_U(newU);
+
+
+
+	}  // for Cells
+
+
+
+
+
+
+
 }
+
+
+
+
 
 cfdFloat Solver::calcMinWavePeriod() {
 
@@ -165,6 +250,9 @@ void Solver::solve() {
 
 		// Calculate timestep
 		dt = maxCFL*calcMinWavePeriod();
+
+		Cell::set_dt(dt);
+
 		if ((dt + tElapsed) > tEnd)
 			dt = tEnd - tElapsed;
 
@@ -181,8 +269,10 @@ void Solver::solve() {
 
 
 		if (iteration % 10 == 0)
+		{
 			cout << "Iter: " << iteration << endl;
-
+//			((display)->*(drawFn))(mesh->cellMap, mesh->faceMap);
+		}
 
 	}
 	while ((tElapsed < tEnd) && (iteration < maxIter));

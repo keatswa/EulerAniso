@@ -6,7 +6,7 @@
  */
 
 #include "Payload.h"
-
+#include <iostream>
 
 //*****************************************************************************
 //*****************        CONSERVED VARIABLES            *********************
@@ -105,6 +105,7 @@ void GasDynVar::resolvePrimitives() {
 
 	if (isnan(PV[PV_A]))
 	{
+		cout << "PV_A is NaN!" << endl;
 		exit(-1);
 	}
 
@@ -211,13 +212,19 @@ GasDynFlux::~GasDynFlux() {
 void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) {
 
 
+	calcAUSMPlusSplitMachNumber();
+	calcAUSMPlusSplitFluxes();
+
 
 
 
 }
 
 
-void GasDynFlux::setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient) {
+void GasDynFlux::setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bcType) {
+
+
+
 
 
 
