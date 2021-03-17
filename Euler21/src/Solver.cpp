@@ -112,7 +112,7 @@ void Solver::calcFaceFluxes() {
 				exit(-1);
 
 
-			f->get_F()->calcFluxes(cvNeg, cvPos);
+			f->get_F()->calcFluxes(cvNeg, cvPos, orient);
 
 
 		}
@@ -225,11 +225,13 @@ void Solver::assignBackwardStepICs() {
 
 		if (tmpCell->get_x() < 0) {
 			cfdFloat a0 = sqrt(GAMMA*bss.p0/bss.rho0);
-			cfdFloat icPVarr[PayloadVar::N_PV] = {bss.rho0, bss.u0, bss.v0, bss.p0, a0};
+			cfdFloat vsq0 = bss.u0*bss.u0 +bss.v0*bss.v0;
+			cfdFloat icPVarr[PayloadVar::N_PV] = {bss.rho0, bss.u0, bss.v0, bss.p0, a0, vsq0};
 			tmpCell->setCVfromPV(icPVarr);
 		} else {
 			cfdFloat a1 = sqrt(GAMMA*bss.p1/bss.rho1);
-			cfdFloat icPVarr[PayloadVar::N_PV] = {bss.rho1, bss.u1, bss.v1, bss.p1, a1};
+			cfdFloat vsq1 = bss.u1*bss.u1 +bss.v1*bss.v1;
+			cfdFloat icPVarr[PayloadVar::N_PV] = {bss.rho1, bss.u1, bss.v1, bss.p1, a1, vsq1};
 			tmpCell->setCVfromPV(icPVarr);
 		}
 	}
@@ -243,7 +245,8 @@ void Solver::solve() {
 	cfdInt numOutputFile = 0;
 
 
-	mesh->doUniformRefine(reflevelMin);
+//	mesh->doUniformRefine(reflevelMin);
+	mesh->doUniformRefine(2);
 
 
 	do {
@@ -271,7 +274,7 @@ void Solver::solve() {
 		if (iteration % 10 == 0)
 		{
 			cout << "Iter: " << iteration << endl;
-//			((display)->*(drawFn))(mesh->cellMap, mesh->faceMap);
+			((display)->*(drawFn))(mesh->cellMap, mesh->faceMap);
 		}
 
 	}

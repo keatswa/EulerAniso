@@ -39,7 +39,8 @@ enum PrimitiveVariable
 	PV_V   = 2,
 	PV_P   = 3,
 	PV_A   = 4,
-	NUM_PRIMITIVE_VARS = 5
+	PV_VSQ = 5,
+	NUM_PRIMITIVE_VARS = 6
 };
 constexpr std::initializer_list<PrimitiveVariable> all_PV = {PV_RHO, PV_U, PV_V, PV_P, PV_A};
 
@@ -165,7 +166,7 @@ public:
 
 	virtual void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) = 0;
 
-	virtual void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) = 0;
+	virtual void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient) = 0;
 
 	virtual void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bcType) = 0;
 
@@ -212,14 +213,52 @@ public:
 
 	~GasDynFlux();
 
-	void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos) ;
+	void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient) ;
 	void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bcType) ;
 
 	// Used for initial conditions
 	void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient);
 
-	void calcAUSMPlusSplitMachNumber();
-	void calcAUSMPlusSplitFluxes();
+	void calcAUSMPlusSplitMachNumber(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient);
+
+	void calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient);
+
+
+
+	inline cfdFloat calcM_plus(cfdFloat M)
+	{
+		return 	(fabs(M) >= 1.0 ?
+				0.5*(M+fabs(M)) :
+		        0.25*(M+1.0)*(M+1.0)+0.125*(M*M-1.0)*(M*M-1.0));
+	}
+
+	inline cfdFloat calcM_minus(cfdFloat M)
+	{
+		return 	(fabs(M) >= 1.0 ?
+				0.5*(M-fabs(M)) :
+				-0.25*(M-1.0)*(M-1.0)-0.125*(M*M-1.0)*(M*M-1.0));
+	}
+
+
+	inline cfdFloat calcPposCoeff(cfdFloat M)
+	{
+		return fabs(M) >= 1.0 ?
+		       0.5*(1.0+(M/fabs(M))) :
+		       0.25*(M+1.0)*(M+1.0)*(2.0-M) + 0.1875*M*(M*M-1.0)*(M*M-1.0);
+
+	}
+
+	inline cfdFloat calcPnegCoeff(cfdFloat M)
+	{
+		return fabs(M) >= 1.0 ?
+		       0.5*(1.0-(M/fabs(M))) :
+		       0.25*(M-1.0)*(M-1.0)*(2.0+M) - 0.1875*M*(M*M-1.0)*(M*M-1.0);
+	}
+
+
+
+
+
 
 };
 
