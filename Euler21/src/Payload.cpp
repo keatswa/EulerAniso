@@ -272,10 +272,10 @@ void GasDynFlux::setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bc
 	}
 	else if (bcType == INLET) {  // subsonic or supersonic
 
-		cfdFloat rho1 = cv->get_PV(PV_RHO);
-		cfdFloat u1 = cv->get_PV(PV_U);
-		cfdFloat v1 = cv->get_PV(PV_V);
-		cfdFloat p1 = cv->get_PV(PV_P);
+		cfdFloat rho1 = 1.0; //cv->get_PV(PV_RHO);
+		cfdFloat u1 = 151.655; //cv->get_PV(PV_U);
+		cfdFloat v1 = 0.0; //cv->get_PV(PV_V);
+		cfdFloat p1 = 100000.0; //cv->get_PV(PV_P);
 
 		cfdFloat inletMachSquared = rho1*(u1*u1 + v1*v1)/(GAMMA*p1);
 
@@ -355,14 +355,15 @@ void GasDynFlux::setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) {
 
 void GasDynFlux::calcAUSMPlusSplitMachNumber(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient) {
 
+
 	cfdFloat p_l, p_r, rho_l, rho_r, a_l, a_r;
 	p_r = cvPos->get_PV(PV_P);
 	p_l = cvNeg->get_PV(PV_P);
 	rho_r = cvPos->get_PV(PV_RHO);
 	rho_l = cvNeg->get_PV(PV_RHO);
-	a_l = sqrt(GAMMA*p_l/rho_l);
 	a_r = sqrt(GAMMA*p_r/rho_r);
-
+	a_l = sqrt(GAMMA*p_l/rho_l);
+/*
 	cfdFloat a_l_hat, a_r_hat, a_star_l_sq, a_star_r_sq;
 
 	cfdFloat vsq[2];
@@ -393,6 +394,8 @@ void GasDynFlux::calcAUSMPlusSplitMachNumber(PayloadVar *cvNeg, PayloadVar *cvPo
 	}
 
 	a_IF = fmin(a_l_hat, a_r_hat);
+*/
+	a_IF = sqrt(a_l*a_r);
 
 
 	if ( orient == V )  // horizontal-going fluxes
@@ -435,17 +438,17 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 		M_IF = fmin(0.0, M);
 
 		if (M_IF != 0.0) {
-			F[CV_DENS] = M_IF*a*cvPos->get_U(CV_DENS);
-			F[CV_XMOM] = M_IF*a*cvPos->get_U(CV_XMOM)
-					        +   cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
-			F[CV_YMOM] = M_IF*a*cvPos->get_U(CV_YMOM);
-			F[CV_NRG ] = M_IF*a*cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P);
+			F[CV_DENS] += M_IF*a*cvPos->get_U(CV_DENS);
+			F[CV_XMOM] += M_IF*a*cvPos->get_U(CV_XMOM)
+					           + cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
+			F[CV_YMOM] += M_IF*a*cvPos->get_U(CV_YMOM);
+			F[CV_NRG ] += M_IF*a*cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P);
 		}
 		else {
-			F[CV_DENS] = 0.0;
-			F[CV_XMOM] = cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
-			F[CV_YMOM] = 0.0;
-			F[CV_NRG ] = 0.0;
+			F[CV_DENS] += 0.0;
+			F[CV_XMOM] += cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
+			F[CV_YMOM] += 0.0;
+			F[CV_NRG ] += 0.0;
 		}
 
 
@@ -458,7 +461,7 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 			F[CV_DENS] = M_IF*a*cvNeg->get_U(CV_DENS);
 			F[CV_XMOM] = M_IF*a*cvNeg->get_U(CV_XMOM);
 			F[CV_YMOM] = M_IF*a*cvNeg->get_U(CV_YMOM)
-							          + cvNeg->get_PV(PV_P)*calcPposCoeff(M_plus);
+							  + cvNeg->get_PV(PV_P)*calcPposCoeff(M_plus);
 			F[CV_NRG ] = M_IF*a*cvNeg->get_U(CV_NRG) + cvNeg->get_PV(PV_P);
 		}
 		else {
@@ -472,17 +475,17 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 		M_IF = fmin(0.0, M);
 
 		if (M_IF != 0.0) {
-			F[CV_DENS] = M_IF*a*cvPos->get_U(CV_DENS);
-			F[CV_XMOM] = M_IF*a*cvPos->get_U(CV_XMOM);
-			F[CV_YMOM] = M_IF*a*cvPos->get_U(CV_YMOM)
-	        +   cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
-			F[CV_NRG ] = M_IF*a*cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P);
+			F[CV_DENS] += M_IF*a*cvPos->get_U(CV_DENS);
+			F[CV_XMOM] += M_IF*a*cvPos->get_U(CV_XMOM);
+			F[CV_YMOM] += M_IF*a*cvPos->get_U(CV_YMOM)
+	        				   + cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
+			F[CV_NRG ] += M_IF*a*cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P);
 		}
 		else {
-			F[CV_DENS] = 0.0;
-			F[CV_XMOM] = 0.0;
-			F[CV_YMOM] = cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
-			F[CV_NRG ] = 0.0;
+			F[CV_DENS] += 0.0;
+			F[CV_XMOM] += 0.0;
+			F[CV_YMOM] += cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
+			F[CV_NRG ] += 0.0;
 		}
 
 

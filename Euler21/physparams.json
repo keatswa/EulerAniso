@@ -1,7 +1,7 @@
 {
 	"case": "BackwardStep",
 	"reflevelMax": 8,
-	"reflevelMin": 5,
+	"reflevelMin": 4,
 	"errorTol": 1.0e-3,
 	"dt":       6.0e-5,
 	"tEnd":    0.085,

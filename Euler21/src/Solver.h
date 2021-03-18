@@ -96,6 +96,9 @@ public:
 	}
 
 
+//	BackwardStepStates getBackwardStepParams() { return bss; }
+
+
 	// Apply the two-state initial condition to the grid of cells that makes up the Backward Step.
 	// If desired, pre-refine the mesh before applying initial conditions based on geometry.
 	// TBD!

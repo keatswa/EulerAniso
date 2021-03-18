@@ -245,9 +245,10 @@ void Solver::solve() {
 	cfdInt numOutputFile = 0;
 
 
-//	mesh->doUniformRefine(reflevelMin);
-	mesh->doUniformRefine(2);
+	mesh->doUniformRefine(reflevelMin);
+//	mesh->doUniformRefine(2);
 
+	resolveCellPrimitives();
 
 	do {
 
@@ -266,15 +267,36 @@ void Solver::solve() {
 		calcFaceFluxes();
 		doCellTimestep(dt, 0);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 
+		resolveCellPrimitives();
+
 
 		tElapsed += dt;
 		iteration++;
 
+		((display)->*(drawFn))(mesh->cellMap, mesh->faceMap);
 
 		if (iteration % 10 == 0)
 		{
 			cout << "Iter: " << iteration << endl;
-			((display)->*(drawFn))(mesh->cellMap, mesh->faceMap);
+
+			ulong testID0 = Cell::generate_id(0, 16, reflevelMin, reflevelMin);
+
+			for (auto& c: mesh->cellMap) {
+				Cell *tmpCell = c.second;
+				if (tmpCell->get_i_idx() == 0 && tmpCell->get_j_idx() == 16) {
+					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
+					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
+											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
+				}
+
+				if (tmpCell->get_i_idx() == 1 && tmpCell->get_j_idx() == 17) {
+					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
+					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
+											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
+				}
+
+
+			}
 		}
 
 	}

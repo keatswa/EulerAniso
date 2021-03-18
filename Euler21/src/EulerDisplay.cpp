@@ -72,9 +72,15 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 
 		SDL_SetRenderDrawColor( renderer, 0xFF, 0x00, 0x00, 0x88 );
 
-		unsigned char rc = 200*c.second->get_U(CV_DENS);
-		unsigned char gc = 200*c.second->get_U(CV_DENS);
-		unsigned char bc = 200*c.second->get_U(CV_DENS);
+//		unsigned char rc = 200*c.second->get_U(CV_DENS);
+//		unsigned char gc = 200*c.second->get_U(CV_DENS);
+//		unsigned char bc = 200*c.second->get_U(CV_DENS);
+
+		unsigned char rc = 0.002*c.second->get_PV(PV_P);
+		unsigned char gc = 1.002*c.second->get_PV(PV_U);
+		unsigned char bc = 1.002*c.second->get_PV(PV_V);
+
+		unsigned char al = 0.90*(1-c.second->get_PV(PV_RHO));
 
 		SDL_SetRenderDrawColor( renderer, rc, gc, bc, 0x88 );
 
@@ -94,7 +100,7 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 		int x = X_SCALE*(f.second->get_x()+X_SHIFT);
 		int y = Y_SCALE*(-f.second->get_y()+Y_SHIFT);
 
-		SDL_SetRenderDrawColor( renderer, 0x11, 0x11, 0xFF, 0xFF );
+		SDL_SetRenderDrawColor( renderer, 0x11, 0x11, 0xFF, 0x33 );
 		SDL_Rect fillRect = {x-1, y-1, 3, 3};
 
 		if (f.second->faceRefFlags.test(doRecycleFace)) {
@@ -118,7 +124,7 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 	}
 
 	SDL_RenderPresent(renderer);
-	SDL_Delay(50);
+	SDL_Delay(5);
 	return(0);
 
 }

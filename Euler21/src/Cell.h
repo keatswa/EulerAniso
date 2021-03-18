@@ -58,6 +58,13 @@ public:
 
 	static RefinedCellFaceGroup createRefinedCell(ORIENTATION orient, Cell* c0); //, unsigned int newCellID);
 
+
+	inline static ulong generate_id(uint _i_idx, uint _j_idx, uint _li, uint _lj) {
+		return (( ((ulong)_i_idx+(_li<<0x18)) << 0x20 ) + ((ulong)_j_idx+(_lj<<0x18)));
+	}
+
+
+
 	bitset<RefinementFlags::NUM_CELLREFINEMENT_FLAGS> refFlags;
 
 	NeighbouringFaces& get_nbFaces() { return(nbFaces); }
