@@ -289,7 +289,7 @@ void Solver::solve() {
 											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
 				}
 
-				if (tmpCell->get_i_idx() == 1 && tmpCell->get_j_idx() == 17) {
+				if (tmpCell->get_i_idx() == 10 && tmpCell->get_j_idx() == 17) {
 					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
 					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
 											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;

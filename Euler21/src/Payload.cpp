@@ -103,7 +103,7 @@ void GasDynVar::resolvePrimitives() {
 	PV[PV_U] = U[CV_XMOM]/U[CV_DENS];
 	PV[PV_V] = U[CV_YMOM]/U[CV_DENS];
 	PV[PV_P] = (GAMMA-1.0)*(U[CV_NRG]-0.5*U[CV_DENS]*(PV[PV_U]*PV[PV_U] + PV[PV_V]*PV[PV_V]));
-	PV[PV_A] = sqrt((GAMMA*PV[PV_P]/U[CV_DENS]));
+	PV[PV_A] = sqrt((GAMMA*PV[PV_P])/U[CV_DENS]);
 	PV[PV_VSQ] = PV[PV_U]*PV[PV_U] + PV[PV_V]*PV[PV_V];
 
 	if (isnan(PV[PV_A]))
@@ -425,7 +425,7 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 			F[CV_XMOM] = M_IF*a*cvNeg->get_U(CV_XMOM)
 					          + cvNeg->get_PV(PV_P)*calcPposCoeff(M_plus);
 			F[CV_YMOM] = M_IF*a*cvNeg->get_U(CV_YMOM);
-			F[CV_NRG ] = M_IF*a*cvNeg->get_U(CV_NRG) + cvNeg->get_PV(PV_P);
+			F[CV_NRG] = M_IF*a*(cvNeg->get_U(CV_NRG) + cvNeg->get_PV(PV_P));
 		}
 		else {
 			F[CV_DENS] = 0.0;
@@ -442,7 +442,7 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 			F[CV_XMOM] += M_IF*a*cvPos->get_U(CV_XMOM)
 					           + cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
 			F[CV_YMOM] += M_IF*a*cvPos->get_U(CV_YMOM);
-			F[CV_NRG ] += M_IF*a*cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P);
+			F[CV_NRG] += M_IF*a*(cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P));
 		}
 		else {
 			F[CV_DENS] += 0.0;
@@ -462,7 +462,7 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 			F[CV_XMOM] = M_IF*a*cvNeg->get_U(CV_XMOM);
 			F[CV_YMOM] = M_IF*a*cvNeg->get_U(CV_YMOM)
 							  + cvNeg->get_PV(PV_P)*calcPposCoeff(M_plus);
-			F[CV_NRG ] = M_IF*a*cvNeg->get_U(CV_NRG) + cvNeg->get_PV(PV_P);
+			F[CV_NRG] = M_IF*a*(cvNeg->get_U(CV_NRG) + cvNeg->get_PV(PV_P));
 		}
 		else {
 			F[CV_DENS] = 0.0;
@@ -479,7 +479,7 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 			F[CV_XMOM] += M_IF*a*cvPos->get_U(CV_XMOM);
 			F[CV_YMOM] += M_IF*a*cvPos->get_U(CV_YMOM)
 	        				   + cvPos->get_PV(PV_P)*calcPnegCoeff(M_minus);
-			F[CV_NRG ] += M_IF*a*cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P);
+			F[CV_NRG] += M_IF*a*(cvPos->get_U(CV_NRG) + cvPos->get_PV(PV_P));
 		}
 		else {
 			F[CV_DENS] += 0.0;
