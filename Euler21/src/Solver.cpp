@@ -7,6 +7,7 @@
 
 #include "Solver.h"
 #include <iostream>
+#include <omp.h>
 
 Solver::Solver() {
 	// TODO Auto-generated constructor stub
@@ -21,6 +22,129 @@ void Solver::resolveCellPrimitives() {
 	}
 
 }
+
+
+
+void Solver::calcGradientsAtCells() {
+
+	Cell *tmpC = NULL;
+	cfdFloat dx, dy;
+	cfdFloat rx, ry;
+
+
+	cfdFloat sUWXX; //[NUM_CONSERVED_VARS];
+	cfdFloat sUWXY; //[NUM_CONSERVED_VARS];
+	cfdFloat sUWYY; //[NUM_CONSERVED_VARS];
+
+	cfdFloat sUWX[NUM_CONSERVED_VARS];
+	cfdFloat sUWY[NUM_CONSERVED_VARS];
+	cfdFloat wtU ; //[NUM_CONSERVED_VARS]; // weight
+
+	cfdFloat dU[NUM_CONSERVED_VARS];
+
+	int weightX, weightY;
+
+
+
+
+
+
+	cfdFloat sPWXX[NUM_PRIMITIVE_VARS];
+	cfdFloat sPWXY[NUM_PRIMITIVE_VARS];
+	cfdFloat sPWYY[NUM_PRIMITIVE_VARS];
+
+	cfdFloat sPWX[NUM_PRIMITIVE_VARS];
+
+
+	for (auto& cp: mesh->cellMap) {
+		Cell *c = cp.second;
+
+		dx = c->get_dx();
+		dy = c->get_dy();
+
+		wtU = 0.0;
+		sUWXX = 0.0;
+		sUWXY = 0.0;
+		sUWYY = 0.0;
+
+		int i;
+#pragma omp parallel for private(i) schedule(static,100) num_threads(2)
+		for (i = 0 ; i < NUM_CONSERVED_VARS ; i++) {
+			sUWX[i] = 0.0;
+			sUWY[i] = 0.0;
+		}
+
+
+
+
+
+		for (auto& d: all_DIR) {
+
+			for_each(c->get_nbFaces().at(d)->begin(), c->get_nbFaces().at(d)->end(),
+						[&c, &d, &rx, &ry, &wtU, &sUWXX, &sUWXY, &sUWYY, &sUWX, &sUWY, &dU, &weightX, &weightY ] (Face *f)
+			{
+				if (!f->get_is_bc()) {
+
+					Cell *nb = NULL;
+					if (!f->get_nbCell(nb, d)) {exit(-1);}
+					rx = nb->get_x() - c->get_x();
+					ry = nb->get_y() - c->get_y();
+					cfdFloat tmpWeight = 1.0/(rx*rx + ry*ry);
+
+					wtU = tmpWeight;
+					sUWXX += wtU*rx*rx;
+					sUWXY += wtU*rx*ry;
+					sUWYY += wtU*ry*ry;
+
+					weightX = dirIsXAxis(d);
+					weightY = dirIsYAxis(d);
+
+					for (auto& idx: all_CV) {
+						dU[idx] = nb->get_U(idx) - c->get_U(idx);
+						sUWX[idx] += weightX*wtU*rx*dU[idx];
+						sUWY[idx] += weightY*wtU*ry*dU[idx];
+
+					} // all_CV
+				}  // if face is not a BC
+			});  // faces at DIR d
+
+		} // for DIR
+
+
+		cfdFloat denom = sUWXY*sUWXY - sUWXX*sUWYY;
+
+		// Denominator nonzero:
+		if (fabs(denom) > 1e-6) {
+			for (auto& idx: all_CV) {
+				c->get_U()->update_dU(X, idx, (sUWXY*sUWY[idx] - sUWYY*sUWX[idx])/denom);
+				c->get_U()->update_dU(Y, idx, (sUWXY*sUWX[idx] - sUWXX*sUWY[idx])/denom);
+			} // all_CV
+
+		}
+		else {
+			for (auto& idx: all_CV) {
+				c->get_U()->update_dU(X, idx, 0.0);
+				c->get_U()->update_dU(Y, idx, 0.0);
+			}
+		}
+
+
+
+
+	}  // for each Cell
+
+
+
+
+
+}
+
+
+
+
+
+
+
 
 void Solver::calcPVGradientsAtFaces() {
 
@@ -120,6 +244,7 @@ void Solver::calcFaceFluxes() {
 	}
 
 }
+
 
 void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 
@@ -269,6 +394,7 @@ void Solver::solve() {
 
 		resolveCellPrimitives();
 
+		calcGradientsAtCells();
 
 		tElapsed += dt;
 		iteration++;

@@ -104,21 +104,24 @@ int EulerIO::readJsonIntoMesh(char *jsonFileName, Mesh *mesh) {
 	{
 		Json::Value jsFaceIDs = jsCells[i]["faceIDs"];
 		Json::Value jsFaceDir;
+
+		ulong tmpCid = Cell::generate_id(jsCells[i]["i"].asUInt(), jsCells[i]["j"].asUInt(), 0, 0);
+
 		jsFaceDir = jsFaceIDs["fN"];
 		for (unsigned int j = 0 ; j < jsFaceDir.size() ; j++) {
-			mesh->init_mapFaceToCell(jsCells[i]["cid"].asLargestUInt(), jsFaceDir[j].get("fid", -1).asLargestUInt(), N);
+			mesh->init_mapFaceToCell(tmpCid, jsFaceDir[j].get("fid", -1).asLargestUInt(), N);
 		}
 		jsFaceDir = jsFaceIDs["fS"];
 		for (unsigned int j = 0 ; j < jsFaceDir.size() ; j++) {
-			mesh->init_mapFaceToCell(jsCells[i]["cid"].asLargestUInt(), jsFaceDir[j].get("fid", -1).asLargestUInt(), S);
+			mesh->init_mapFaceToCell(tmpCid, jsFaceDir[j].get("fid", -1).asLargestUInt(), S);
 		}
 		jsFaceDir = jsFaceIDs["fW"];
 		for (unsigned int j = 0 ; j < jsFaceDir.size() ; j++) {
-			mesh->init_mapFaceToCell(jsCells[i]["cid"].asLargestUInt(), jsFaceDir[j].get("fid", -1).asLargestUInt(), W);
+			mesh->init_mapFaceToCell(tmpCid, jsFaceDir[j].get("fid", -1).asLargestUInt(), W);
 		}
 		jsFaceDir = jsFaceIDs["fE"];
 		for (unsigned int j = 0 ; j < jsFaceDir.size() ; j++) {
-			mesh->init_mapFaceToCell(jsCells[i]["cid"].asLargestUInt(), jsFaceDir[j].get("fid", -1).asLargestUInt(), E);
+			mesh->init_mapFaceToCell(tmpCid, jsFaceDir[j].get("fid", -1).asLargestUInt(), E);
 		}
 
 

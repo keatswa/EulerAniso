@@ -272,10 +272,10 @@ void GasDynFlux::setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bc
 	}
 	else if (bcType == INLET) {  // subsonic or supersonic
 
-		cfdFloat rho1 = 1.0; //cv->get_PV(PV_RHO);
-		cfdFloat u1 = 151.655; //cv->get_PV(PV_U);
-		cfdFloat v1 = 0.0; //cv->get_PV(PV_V);
-		cfdFloat p1 = 100000.0; //cv->get_PV(PV_P);
+		cfdFloat rho1 = cv->get_PV(PV_RHO);
+		cfdFloat u1 = cv->get_PV(PV_U);
+		cfdFloat v1 = cv->get_PV(PV_V);
+		cfdFloat p1 = cv->get_PV(PV_P);
 
 		cfdFloat inletMachSquared = rho1*(u1*u1 + v1*v1)/(GAMMA*p1);
 

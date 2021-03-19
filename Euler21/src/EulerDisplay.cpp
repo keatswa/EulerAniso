@@ -72,9 +72,9 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 
 		SDL_SetRenderDrawColor( renderer, 0xFF, 0x00, 0x00, 0x88 );
 
-//		unsigned char rc = 200*c.second->get_U(CV_DENS);
-//		unsigned char gc = 200*c.second->get_U(CV_DENS);
-//		unsigned char bc = 200*c.second->get_U(CV_DENS);
+//		unsigned char rc = exp2(fabs(2*c.second->get_U()->get_dU(X, CV_DENS)));
+//		unsigned char gc = exp2(fabs(2*c.second->get_U()->get_dU(Y, CV_DENS)));
+//		unsigned char bc = 200*c.second->get_U(CV_DENS); //->get_dU(X, CV_DENS);
 
 		unsigned char rc = 0.002*c.second->get_PV(PV_P);
 		unsigned char gc = 1.002*c.second->get_PV(PV_U);

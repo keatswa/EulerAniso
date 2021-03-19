@@ -47,6 +47,12 @@ constexpr std::initializer_list<DIR>   y_DIR = {S,N    };
 // Defined in Cell.cpp:
 extern DIR oppositeDir(DIR d);
 
+// Defined in Mesh.cpp:
+extern AXIS dirToAxis(DIR d) ;
+
+extern int dirIsXAxis(DIR d) ;
+
+extern int dirIsYAxis(DIR d) ;
 
 enum SIGN {
 	NEG=0, POS=1

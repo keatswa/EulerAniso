@@ -55,6 +55,9 @@ private:
 
 	CB_EulerDisplay_drawFn drawFn;
 
+
+	void calcGradientsAtCells();
+
 	// solve() calls:
 	void resolveCellPrimitives();   // Conservative Variables to Primitive Variables
 	void calcPVGradientsAtFaces();       // e.g. finite difference across the face

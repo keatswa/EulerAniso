@@ -84,6 +84,30 @@ public:
 
 	virtual void update_U(cfdFloat *newU) { for (auto& idx: all_CV) { U[idx] = newU[idx]; } }
 
+	virtual void update_dU(AXIS axis, ConservedVariable idx, cfdFloat value) {
+		switch (axis) {
+		case X:
+			d_U_x[idx] = value;
+			break;
+		case Y:
+			d_U_y[idx] = value;
+			break;
+		}
+	}
+
+	virtual cfdFloat get_dU(AXIS axis, ConservedVariable idx) {
+		switch (axis) {
+			case X:
+				return d_U_x[idx];
+				break;
+			case Y:
+				return d_U_y[idx];
+				break;
+			}
+		return 0;
+	}
+
+
 	virtual void resolvePrimitives() = 0;
 
 
@@ -91,6 +115,8 @@ public:
 protected:
 	cfdFloat U[NUM_CONSERVED_VARS];
 	cfdFloat PV[NUM_PRIMITIVE_VARS];
+	cfdFloat d_U_x[NUM_CONSERVED_VARS];
+	cfdFloat d_U_y[NUM_CONSERVED_VARS];
 	cfdFloat d_PV_x[NUM_PRIMITIVE_VARS];
 	cfdFloat d_PV_y[NUM_PRIMITIVE_VARS];
 

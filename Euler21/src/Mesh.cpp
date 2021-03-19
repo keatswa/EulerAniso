@@ -14,6 +14,26 @@
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 
+AXIS dirToAxis(DIR d) {
+	if (d == N || d == S)
+		return Y;
+	else
+		return X;
+}
+
+int dirIsXAxis(DIR d) {
+	if (d == E || d == W)
+		return 1;
+	else
+		return 0;
+}
+
+int dirIsYAxis(DIR d) {
+	if (d == N || d == S)
+		return 1;
+	else
+		return 0;
+}
 
 
 Mesh::Mesh() {
