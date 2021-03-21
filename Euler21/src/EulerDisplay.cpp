@@ -120,11 +120,11 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 	}
 
 	if(checkQuitEvent() == 1) {
-		return(0);
+		return(-1);
 	}
 
-	SDL_RenderPresent(renderer);
 	SDL_Delay(5);
+	SDL_RenderPresent(renderer);
 	return(0);
 
 }

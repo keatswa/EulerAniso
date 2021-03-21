@@ -16,9 +16,23 @@ Solver::Solver() {
 
 void Solver::resolveCellPrimitives() {
 
-	for (auto& cp: mesh->cellMap) {
-		Cell *c = cp.second;
-		c->get_U()->resolvePrimitives();
+	mesh->init_vecCellIDs();
+	unsigned long Ncells = mesh->vecCellIDs.size();
+	unsigned long i;
+	Cell *c;
+	PayloadVar *tmpU;
+
+	BROKEN
+#pragma omp parallel for shared(mesh) private(c, tmpU) num_threads(8)
+	for (i = 0 ; i < Ncells ; i++) {
+
+//	for (auto& cp: mesh->cellMap) {
+//		Cell *c = cp.second;
+
+		c = mesh->cellMap.at(mesh->vecCellIDs[i]);
+		tmpU = c->get_U();
+		tmpU->resolvePrimitives();
+//		c->get_U()->resolvePrimitives();
 	}
 
 }
@@ -68,7 +82,7 @@ void Solver::calcGradientsAtCells() {
 		sUWYY = 0.0;
 
 		int i;
-#pragma omp parallel for private(i) schedule(static,100) num_threads(2)
+
 		for (i = 0 ; i < NUM_CONSERVED_VARS ; i++) {
 			sUWX[i] = 0.0;
 			sUWY[i] = 0.0;
@@ -206,12 +220,23 @@ void Solver::calcFaceFluxes() {
 
 	ORIENTATION orient;
 	Cell *c = NULL;
+	Face *f = NULL;
 	PayloadVar *cvNeg, *cvPos;
+	unsigned long i;
+	unsigned long Nfaces = mesh->vecFaceIDs.size();
 
 
-	for (auto& fp: mesh->faceMap) {
-		Face *f = fp.second;
+	mesh->init_vecFaceIDs();
 
+
+//	for (auto& fp: mesh->faceMap) {
+//		f = fp.second;
+
+#pragma omp parallel for shared(mesh) private(c, f, cvNeg, cvPos) num_threads(8)
+
+	for (i = 0 ; i < Nfaces ; i++) {
+
+		f = mesh->faceMap.at(mesh->vecFaceIDs[i]);
 
 		orient = f->get_orient();
 
@@ -253,8 +278,27 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 	cfdFloat flux[4][PayloadVar::N_CV];
 	cfdFloat newU[PayloadVar::N_CV];
 
-	for (auto& cp: mesh->cellMap) {
-		Cell *c = cp.second;
+	mesh->init_vecCellIDs();
+
+	unsigned long Ncells = mesh->vecCellIDs.size();
+
+//	for (auto& cp: mesh->cellMap) {
+//		Cell *c = cp.second;
+
+	unsigned long i;
+	Cell *c;
+	DIR d;
+	ConservedVariable idx;
+//	CellMap *cm = &(mesh->cellMap);
+
+
+#pragma omp parallel for shared(mesh/*, cm*/) private(c, flux, newU, idx, d, fcnt) num_threads(8)
+	for (i = 0 ; i < Ncells ; i++) {
+
+//		c = cm->at(mesh->vecCellIDs[i]);
+
+		c = mesh->cellMap.at(mesh->vecCellIDs[i]);
+
 
 		dx = c->get_dx();
 		dy = c->get_dy();
@@ -286,13 +330,7 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 		c->get_U()->update_U(newU);
 
 
-
 	}  // for Cells
-
-
-
-
-
 
 
 }
@@ -399,7 +437,8 @@ void Solver::solve() {
 		tElapsed += dt;
 		iteration++;
 
-		((display)->*(drawFn))(mesh->cellMap, mesh->faceMap);
+		if (((display)->*(drawFn))(mesh->cellMap, mesh->faceMap) == -1)
+			exit(1);
 
 		if (iteration % 10 == 0)
 		{

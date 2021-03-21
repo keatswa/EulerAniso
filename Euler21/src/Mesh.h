@@ -49,14 +49,39 @@ public:
 	Mesh();
 	virtual ~Mesh();
 
+	CellMap cellMap;
+	FaceMap faceMap;
+
+
+	vector<unsigned long> vecCellIDs;
+	vector<unsigned long> vecFaceIDs;
+
+	void init_vecCellIDs() {
+		vecCellIDs.resize(cellMap.size());
+		unsigned long i = 0;
+		for (auto& c: cellMap) {
+			vecCellIDs[i] = c.first;
+			i++;
+		}
+
+	}
+
+
+	void init_vecFaceIDs() {
+		vecFaceIDs.resize(faceMap.size());
+		unsigned long i = 0;
+		for (auto& f: faceMap) {
+			vecFaceIDs[i] = f.first;
+			i++;
+		}
+	}
+
+
 	// Specify the object that will be used to display results
 	void set_display(EulerDisplay *_display) { display = _display; }
 
 	// Set callback to draw function in 'display' object
 	void set_cb_drawFn(CB_EulerDisplay_drawFn& df) { drawFn = df; }
-
-	CellMap cellMap;
-	FaceMap faceMap;
 
 	void set_iteration(int n) { iteration = n; }
 

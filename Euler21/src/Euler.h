@@ -103,8 +103,8 @@ typedef float cfdFloat;
 typedef int   cfdInt;
 
 typedef deque<Face*> FaceDeque;
-typedef map<DIR, FaceDeque*> NeighbouringFaces;
-typedef map<SIGN, Cell*> NeighbouringCells;
+typedef unordered_map<DIR, FaceDeque*> NeighbouringFaces;
+typedef unordered_map<SIGN, Cell*> NeighbouringCells;
 
 //typedef tsl::robin_map<unsigned long, Cell*> CellMap;
 //typedef tsl::robin_map<unsigned long, Face*> FaceMap;
