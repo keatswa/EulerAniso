@@ -22,18 +22,25 @@ void Solver::resolveCellPrimitives() {
 	Cell *c;
 	PayloadVar *tmpU;
 
-	BROKEN
-#pragma omp parallel for shared(mesh) private(c, tmpU) num_threads(8)
-	for (i = 0 ; i < Ncells ; i++) {
+//#pragma omp parallel for default(shared) shared(mesh, GAMMA) private(c, tmpU) num_threads(8)
+//#pragma omp taskloop shared(mesh, GAMMA) private(c, tmpU) grainsize(100) nogroup
+//	for (i = 0 ; i < Ncells ; i++) {
 
 //	for (auto& cp: mesh->cellMap) {
 //		Cell *c = cp.second;
 
-		c = mesh->cellMap.at(mesh->vecCellIDs[i]);
+	vector<unsigned long>::iterator cit;
+	mesh->init_vecCellIDs();
+#pragma omp parallel for shared(mesh) private(c, tmpU) num_threads(nThreads)
+	for (cit = mesh->vecCellIDs.begin(); cit < mesh->vecCellIDs.end(); cit++) {
+		c = mesh->cellMap.at(*cit);
+
+//		c = mesh->cellMap.at(mesh->vecCellIDs[i]);
 		tmpU = c->get_U();
 		tmpU->resolvePrimitives();
 //		c->get_U()->resolvePrimitives();
 	}
+
 
 }
 
@@ -70,8 +77,19 @@ void Solver::calcGradientsAtCells() {
 	cfdFloat sPWX[NUM_PRIMITIVE_VARS];
 
 
-	for (auto& cp: mesh->cellMap) {
-		Cell *c = cp.second;
+//	for (auto& cp: mesh->cellMap) {
+//		Cell *c = cp.second;
+
+		Cell *c = NULL;
+		vector<unsigned long>::iterator cit;
+		mesh->init_vecCellIDs();
+	#pragma omp parallel for shared(mesh) private(c, tmpC, dx, dy, rx, ry, sUWXX, sUWXY, sUWYY, sUWX, sUWY, wtU, dU, weightX, weightY) num_threads(nThreads)
+		for (cit = mesh->vecCellIDs.begin(); cit < mesh->vecCellIDs.end(); cit++) {
+			c = mesh->cellMap.at(*cit);
+
+
+
+
 
 		dx = c->get_dx();
 		dy = c->get_dy();
@@ -219,26 +237,29 @@ void Solver::limitCellGradients() {
 void Solver::calcFaceFluxes() {
 
 	ORIENTATION orient;
-	Cell *c = NULL;
 	Face *f = NULL;
 	PayloadVar *cvNeg, *cvPos;
 	unsigned long i;
 	unsigned long Nfaces = mesh->vecFaceIDs.size();
 
+	vector<unsigned long>::iterator fit;
+
+
 
 	mesh->init_vecFaceIDs();
+#pragma omp parallel for shared(mesh) private(orient, f, cvNeg, cvPos, Nfaces) num_threads(nThreads)
+	for (fit = mesh->vecFaceIDs.begin(); fit < mesh->vecFaceIDs.end(); fit++) {
+		f = mesh->faceMap.at(*fit);
+
+//	for (i = 0 ; i < Nfaces ; i++) {
+//		f = mesh->faceMap.at(mesh->vecFaceIDs[i]);
 
 
 //	for (auto& fp: mesh->faceMap) {
 //		f = fp.second;
 
-#pragma omp parallel for shared(mesh) private(c, f, cvNeg, cvPos) num_threads(8)
-
-	for (i = 0 ; i < Nfaces ; i++) {
-
-		f = mesh->faceMap.at(mesh->vecFaceIDs[i]);
-
 		orient = f->get_orient();
+	Cell *c = NULL;
 
 		if (f->get_is_bc()) {
 
@@ -278,26 +299,29 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 	cfdFloat flux[4][PayloadVar::N_CV];
 	cfdFloat newU[PayloadVar::N_CV];
 
-	mesh->init_vecCellIDs();
 
 	unsigned long Ncells = mesh->vecCellIDs.size();
 
-//	for (auto& cp: mesh->cellMap) {
-//		Cell *c = cp.second;
 
 	unsigned long i;
 	Cell *c;
-	DIR d;
-	ConservedVariable idx;
-//	CellMap *cm = &(mesh->cellMap);
+//	DIR d;
+//	ConservedVariable idx;
+////	CellMap *cm = &(mesh->cellMap);
+	vector<unsigned long>::iterator cit;
+	mesh->init_vecCellIDs();
+#pragma omp parallel for shared(mesh) private(c, flux, newU, fcnt) num_threads(nThreads)
+	for (cit = mesh->vecCellIDs.begin(); cit < mesh->vecCellIDs.end(); cit++) {
+		c = mesh->cellMap.at(*cit);
 
 
-#pragma omp parallel for shared(mesh/*, cm*/) private(c, flux, newU, idx, d, fcnt) num_threads(8)
-	for (i = 0 ; i < Ncells ; i++) {
+// Fails under omp parallel:
+//	for (i = 0 ; i < Ncells ; i++) {
+//		c = mesh->cellMap.at(mesh->vecCellIDs[i]);
 
-//		c = cm->at(mesh->vecCellIDs[i]);
-
-		c = mesh->cellMap.at(mesh->vecCellIDs[i]);
+// OK for single CPU:
+//	for (auto& cp: mesh->cellMap) {
+//		Cell *c = cp.second;
 
 
 		dx = c->get_dx();
@@ -424,14 +448,13 @@ void Solver::solve() {
 			dt = tEnd - tElapsed;
 
 
-		resolveCellPrimitives();
-		calcPVGradientsAtFaces();
-		limitCellGradients();
+//		resolveCellPrimitives();
+//		calcPVGradientsAtFaces();
+//		limitCellGradients();
 		calcFaceFluxes();
 		doCellTimestep(dt, 0);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 
 		resolveCellPrimitives();
-
 		calcGradientsAtCells();
 
 		tElapsed += dt;

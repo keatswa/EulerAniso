@@ -39,6 +39,8 @@ class Solver {
 
 private:
 
+	inline const static int nThreads = 8;
+
 	Mesh *mesh;
 
 	cfdInt reflevelMax = -1;
