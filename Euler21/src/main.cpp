@@ -74,9 +74,9 @@ int main(int argc, char* argv[]) {
 
 
 
-//	while(display->checkQuitEvent() == 0) {
-//		SDL_Delay(5);
-//	}
+	while(display->checkQuitEvent() == 0) {
+		SDL_Delay(5);
+	}
 
 
 	cout << "SUCCESS" << endl;

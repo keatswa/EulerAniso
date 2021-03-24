@@ -45,6 +45,16 @@ enum PrimitiveVariable
 constexpr std::initializer_list<PrimitiveVariable> all_PV = {PV_RHO, PV_U, PV_V, PV_P, PV_A};
 
 
+enum AnalyticVariable
+{
+	AV_SCHLIEREN = 0,
+	AV_PSI0 = 1,
+	AV_PSI1 = 2,
+	NUM_ANALYTIC_VARS = 3
+};
+
+
+
 
 class PayloadVar {
 
@@ -110,6 +120,8 @@ public:
 
 	virtual void resolvePrimitives() = 0;
 
+	virtual void set_PHI(AnalyticVariable idx, cfdFloat value) { PHI[idx] = value; }
+	virtual cfdFloat get_PHI(AnalyticVariable idx) { return PHI[idx]; }
 
 
 protected:
@@ -119,6 +131,8 @@ protected:
 	cfdFloat d_U_y[NUM_CONSERVED_VARS];
 	cfdFloat d_PV_x[NUM_PRIMITIVE_VARS];
 	cfdFloat d_PV_y[NUM_PRIMITIVE_VARS];
+
+	cfdFloat PHI[NUM_ANALYTIC_VARS];
 
 
 };

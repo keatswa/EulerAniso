@@ -53,6 +53,10 @@ public:
 	cfdFloat get_U(ConservedVariable idx) { return U->get_U(idx); }
 	cfdFloat get_PV(PrimitiveVariable idx) { return U->get_PV(idx); }
 
+	cfdFloat get_dU_EuclideanNorm(ConservedVariable idx) {
+		return sqrt(pow(U->get_dU(X, idx), 2) + pow(U->get_dU(Y, idx), 2));
+	}
+
 	void setCVfromPV(cfdFloat *icPVarr){ U->setCVFromPrimitives(icPVarr); }
 
 

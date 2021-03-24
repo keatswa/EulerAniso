@@ -67,6 +67,8 @@ private:
 	void calcFaceFluxes();			// TBD: parameterize by scheme { AUSM+, VANLEER, HLLC, etc.. }
 	void doCellTimestep(cfdFloat dt, cfdInt rkStage);
 
+	void postProcess();			// Calculate false Schlieren values, etc.
+
 	cfdFloat calcMinWavePeriod();   // Loop over all cells to limit the timestep.
 
 public:

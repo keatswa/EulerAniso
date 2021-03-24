@@ -17,8 +17,8 @@ Solver::Solver() {
 void Solver::resolveCellPrimitives() {
 
 	mesh->init_vecCellIDs();
-	unsigned long Ncells = mesh->vecCellIDs.size();
-	unsigned long i;
+//	unsigned long Ncells = mesh->vecCellIDs.size();
+//	unsigned long i;
 	Cell *c;
 	PayloadVar *tmpU;
 
@@ -48,8 +48,8 @@ void Solver::resolveCellPrimitives() {
 
 void Solver::calcGradientsAtCells() {
 
-	Cell *tmpC = NULL;
-	cfdFloat dx, dy;
+//	Cell *tmpC = NULL;
+//	cfdFloat dx, dy;
 	cfdFloat rx, ry;
 
 
@@ -66,24 +66,15 @@ void Solver::calcGradientsAtCells() {
 	int weightX, weightY;
 
 
-
-
-
-
-	cfdFloat sPWXX[NUM_PRIMITIVE_VARS];
-	cfdFloat sPWXY[NUM_PRIMITIVE_VARS];
-	cfdFloat sPWYY[NUM_PRIMITIVE_VARS];
-
-	cfdFloat sPWX[NUM_PRIMITIVE_VARS];
-
-
 //	for (auto& cp: mesh->cellMap) {
 //		Cell *c = cp.second;
 
 		Cell *c = NULL;
 		vector<unsigned long>::iterator cit;
 		mesh->init_vecCellIDs();
-	#pragma omp parallel for shared(mesh) private(c, tmpC, dx, dy, rx, ry, sUWXX, sUWXY, sUWYY, sUWX, sUWY, wtU, dU, weightX, weightY) num_threads(nThreads)
+	#pragma omp parallel for shared(mesh) private(c, /*tmpC, dx, dy,*/ rx, ry,           \
+		                                          sUWXX, sUWXY, sUWYY, sUWX, sUWY,   \
+												  wtU, dU, weightX, weightY         ) num_threads(nThreads)
 		for (cit = mesh->vecCellIDs.begin(); cit < mesh->vecCellIDs.end(); cit++) {
 			c = mesh->cellMap.at(*cit);
 
@@ -91,8 +82,8 @@ void Solver::calcGradientsAtCells() {
 
 
 
-		dx = c->get_dx();
-		dy = c->get_dy();
+//		dx = c->get_dx();
+//		dy = c->get_dy();
 
 		wtU = 0.0;
 		sUWXX = 0.0;
@@ -239,15 +230,13 @@ void Solver::calcFaceFluxes() {
 	ORIENTATION orient;
 	Face *f = NULL;
 	PayloadVar *cvNeg, *cvPos;
-	unsigned long i;
-	unsigned long Nfaces = mesh->vecFaceIDs.size();
+//	unsigned long i;
+//	unsigned long Nfaces = mesh->vecFaceIDs.size();
 
 	vector<unsigned long>::iterator fit;
 
-
-
 	mesh->init_vecFaceIDs();
-#pragma omp parallel for shared(mesh) private(orient, f, cvNeg, cvPos, Nfaces) num_threads(nThreads)
+#pragma omp parallel for shared(mesh) private(orient, f, cvNeg, cvPos) num_threads(nThreads)
 	for (fit = mesh->vecFaceIDs.begin(); fit < mesh->vecFaceIDs.end(); fit++) {
 		f = mesh->faceMap.at(*fit);
 
@@ -300,10 +289,8 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 	cfdFloat newU[PayloadVar::N_CV];
 
 
-	unsigned long Ncells = mesh->vecCellIDs.size();
-
-
-	unsigned long i;
+//	unsigned long Ncells = mesh->vecCellIDs.size();
+//	unsigned long i;
 	Cell *c;
 //	DIR d;
 //	ConservedVariable idx;
@@ -429,7 +416,7 @@ void Solver::solve() {
 
 	cfdFloat tElapsed = 0.0;
 	cfdInt   iteration = 0;
-	cfdInt numOutputFile = 0;
+//	cfdInt numOutputFile = 0;
 
 
 	mesh->doUniformRefine(reflevelMin);
@@ -456,6 +443,7 @@ void Solver::solve() {
 
 		resolveCellPrimitives();
 		calcGradientsAtCells();
+		postProcess();
 
 		tElapsed += dt;
 		iteration++;
@@ -489,6 +477,64 @@ void Solver::solve() {
 
 	}
 	while ((tElapsed < tEnd) && (iteration < maxIter));
+
+
+
+}
+
+
+
+
+
+void Solver::postProcess() {
+
+	cfdFloat abs_rho = -1;
+	cfdFloat max_abs_rho = -1;
+	cfdFloat k = 2.0;
+	cfdFloat k0 = 0.05;
+	cfdFloat k1 = -0.001;
+
+	cfdFloat abs_rho_0 = -1;
+	cfdFloat abs_rho_1 = -1;
+
+	cfdFloat min_psi = 1.0e12;
+	cfdFloat max_psi = 0.0;
+	cfdFloat tmp_psi = 0.0;
+
+
+	for (auto& cp: mesh->cellMap) {
+		Cell *c = cp.second;
+		abs_rho = c->get_dU_EuclideanNorm(CV_DENS);
+		if (abs_rho > max_abs_rho)
+			max_abs_rho = abs_rho;
+	}
+
+	abs_rho_0 = k0*max_abs_rho;
+	abs_rho_1 = k1*max_abs_rho;
+
+	for (auto& cp: mesh->cellMap) {
+		Cell *c = cp.second;
+		cfdFloat psi = (c->get_dU_EuclideanNorm(CV_DENS) - abs_rho_0)/(abs_rho_1 - abs_rho_0);
+		c->get_U()->set_PHI(AV_SCHLIEREN, exp(k*psi));
+
+		if (c->get_U()->get_PHI(AV_SCHLIEREN) > max_psi)
+			max_psi = c->get_U()->get_PHI(AV_SCHLIEREN);
+
+		if (c->get_U()->get_PHI(AV_SCHLIEREN) < min_psi)
+			min_psi = c->get_U()->get_PHI(AV_SCHLIEREN);
+
+	}
+
+
+	for (auto& cp: mesh->cellMap) {
+		Cell *c = cp.second;
+
+		tmp_psi = c->get_U()->get_PHI(AV_SCHLIEREN);
+
+		c->get_U()->set_PHI(AV_SCHLIEREN, (tmp_psi - min_psi)/(max_psi - min_psi));
+
+	}
+
 
 
 
