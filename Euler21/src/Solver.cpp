@@ -205,7 +205,7 @@ void Solver::calcPVGradientsAtFaces() {
 			else
 				exit(-1);
 
-			ds = ds_pos + ds_neg;
+			ds = 0.5*(ds_pos + ds_neg);
 
 			f->get_F()->calcGradient(cvNeg, cvPos, ds);
 		}
