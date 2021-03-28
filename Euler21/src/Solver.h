@@ -10,6 +10,7 @@
 
 #include "Mesh.h"
 #include <iostream>
+#include <cmath>
 
 enum ProblemCase {
 	BACKWARD_STEP,
@@ -18,6 +19,13 @@ enum ProblemCase {
 	SHALLOW_TANK
 };
 
+
+enum LIMITER_TYPE {
+	MINMOD,
+	SUPERBEE,
+	HARMONIC,
+	VANALBADA
+};
 
 
 typedef struct BackwardStepStates {
@@ -61,9 +69,10 @@ private:
 	void calcGradientsAtCells();
 
 	// solve() calls:
-	void resolveCellPrimitives();   // Conservative Variables to Primitive Variables
-	void calcPVGradientsAtFaces();       // e.g. finite difference across the face
-	void limitCellGradients();      // e.g. minmod of face gradients
+	void resolveCellPrimitives();   	// Conservative Variables to Primitive Variables
+	void calcGradientsAtFaces();       	// e.g. finite difference across the face
+	void limitCellGradients(LIMITER_TYPE limType);      	// e.g. minmod of face gradients
+	void calcGradientCorrections();		// calculate gradient-corrected U/PV values at faces
 	void calcFaceFluxes();			// TBD: parameterize by scheme { AUSM+, VANLEER, HLLC, etc.. }
 	void doCellTimestep(cfdFloat dt, cfdInt rkStage);
 
@@ -122,6 +131,37 @@ public:
 
 
 	void solve();
+
+
+
+	cfdFloat limiter(LIMITER_TYPE type, cfdFloat ratio)	{
+
+		if (type == MINMOD)
+		{
+			return(max((cfdFloat)0.0, min(ratio, (cfdFloat)1.0)));
+		}
+		if (type == SUPERBEE)
+		{// C++11 allows max/min({x,y,z}); i.e., more than 2 args
+			return(max({(cfdFloat)0.0, min(((cfdFloat)2.0)*ratio, (cfdFloat)1.0), min(ratio, (cfdFloat)2.0)}));
+		}
+		if (type == HARMONIC)
+		{
+			return((ratio + abs(ratio))/(ratio + 1.0));
+		}
+		if (type == VANALBADA)
+		{
+			return((pow(ratio,2) + ratio)/(pow(ratio,2) + 1.0));
+		}
+
+		return(0.0);
+
+	}
+
+
+
+
+
+
 
 
 

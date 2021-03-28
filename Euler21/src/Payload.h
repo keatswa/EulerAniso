@@ -105,6 +105,19 @@ public:
 		}
 	}
 
+
+	virtual void update_dPV(AXIS axis, PrimitiveVariable idx, cfdFloat value) {
+		switch (axis) {
+		case X:
+			d_PV_x[idx] = value;
+			break;
+		case Y:
+			d_PV_y[idx] = value;
+			break;
+		}
+	}
+
+
 	virtual cfdFloat get_dU(AXIS axis, ConservedVariable idx) {
 		switch (axis) {
 			case X:
@@ -218,6 +231,7 @@ public:
 	void set_d_PV(PrimitiveVariable idx, cfdFloat value) {d_PV[idx] = value; }
 
 	cfdFloat get_d_PV(PrimitiveVariable idx) {return d_PV[idx]; }
+	cfdFloat get_d_U(ConservedVariable idx) {return d_U[idx]; }
 
 	void calcGradient(PayloadVar *cvNeg, PayloadVar *cvPos, cfdFloat ds);
 

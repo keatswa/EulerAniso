@@ -363,7 +363,7 @@ void GasDynFlux::calcAUSMPlusSplitMachNumber(PayloadVar *cvNeg, PayloadVar *cvPo
 	rho_l = cvNeg->get_PV(PV_RHO);
 	a_r = sqrt(GAMMA*p_r/rho_r);
 	a_l = sqrt(GAMMA*p_l/rho_l);
-/*
+///*  Below:  Total Enthalpy definition of interface speed of sound from Liou's AUSM+-up paper
 	cfdFloat a_l_hat, a_r_hat, a_star_l_sq, a_star_r_sq;
 
 	cfdFloat vsq[2];
@@ -394,8 +394,8 @@ void GasDynFlux::calcAUSMPlusSplitMachNumber(PayloadVar *cvNeg, PayloadVar *cvPo
 	}
 
 	a_IF = fmin(a_l_hat, a_r_hat);
-*/
-	a_IF = sqrt(a_l*a_r);
+//*/
+//	a_IF = sqrt(a_l*a_r);
 
 
 	if ( orient == V )  // horizontal-going fluxes

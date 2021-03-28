@@ -16,29 +16,19 @@ Solver::Solver() {
 
 void Solver::resolveCellPrimitives() {
 
-	mesh->init_vecCellIDs();
-//	unsigned long Ncells = mesh->vecCellIDs.size();
-//	unsigned long i;
 	Cell *c;
-	PayloadVar *tmpU;
+//	PayloadVar *tmpU;
 
-//#pragma omp parallel for default(shared) shared(mesh, GAMMA) private(c, tmpU) num_threads(8)
-//#pragma omp taskloop shared(mesh, GAMMA) private(c, tmpU) grainsize(100) nogroup
-//	for (i = 0 ; i < Ncells ; i++) {
-
-//	for (auto& cp: mesh->cellMap) {
-//		Cell *c = cp.second;
 
 	vector<unsigned long>::iterator cit;
 	mesh->init_vecCellIDs();
-#pragma omp parallel for shared(mesh) private(c, tmpU) num_threads(nThreads)
+#pragma omp parallel for shared(mesh) private(c/*, tmpU*/) num_threads(nThreads)
 	for (cit = mesh->vecCellIDs.begin(); cit < mesh->vecCellIDs.end(); cit++) {
 		c = mesh->cellMap.at(*cit);
 
-//		c = mesh->cellMap.at(mesh->vecCellIDs[i]);
-		tmpU = c->get_U();
-		tmpU->resolvePrimitives();
-//		c->get_U()->resolvePrimitives();
+//		tmpU = c->get_U();
+//		tmpU->resolvePrimitives();
+		c->get_U()->resolvePrimitives();
 	}
 
 
@@ -169,7 +159,7 @@ void Solver::calcGradientsAtCells() {
 
 
 
-void Solver::calcPVGradientsAtFaces() {
+void Solver::calcGradientsAtFaces() {
 
 	Cell *c = NULL;
 	PayloadVar *cvNeg, *cvPos;
@@ -212,12 +202,105 @@ void Solver::calcPVGradientsAtFaces() {
 	}
 }
 
-void Solver::limitCellGradients() {
+void Solver::limitCellGradients(LIMITER_TYPE limType) {
 
-	for (auto& cp: mesh->cellMap) {
-		Cell *c = cp.second;
+	// Temporary storage
+	cfdFloat  d_U_x[2/*SIGN*/][NUM_CONSERVED_VARS];
+	cfdFloat  d_U_y[2/*SIGN*/][NUM_CONSERVED_VARS];
+	cfdFloat d_PV_x[2/*SIGN*/][NUM_PRIMITIVE_VARS];
+	cfdFloat d_PV_y[2/*SIGN*/][NUM_PRIMITIVE_VARS];
+	int faceCnt = 0;
+	SIGN sgn = NEG;
+
+
+	Cell *c;
+	vector<unsigned long>::iterator cit;
+	mesh->init_vecCellIDs();
+#pragma omp parallel for shared(mesh) private(c, d_U_x, d_U_y, d_PV_x, d_PV_y, faceCnt, sgn) num_threads(nThreads)
+	for (cit = mesh->vecCellIDs.begin(); cit < mesh->vecCellIDs.end(); cit++) {
+		c = mesh->cellMap.at(*cit);
+
+
+		// Zero out all cell-centred derivatives
+		for (auto& idx: all_CV) {
+			c->get_U()->update_dU(X, idx, 0.0);
+			c->get_U()->update_dU(Y, idx, 0.0);
+			d_U_x[NEG][idx] = 0.0;
+			d_U_x[POS][idx] = 0.0;
+			d_U_y[NEG][idx] = 0.0;
+			d_U_y[POS][idx] = 0.0;
+		}
+
+		for (auto& idx: all_PV) {
+			c->get_U()->update_dPV(X, idx, 0.0);
+			c->get_U()->update_dPV(Y, idx, 0.0);
+			d_PV_x[NEG][idx] = 0.0;
+			d_PV_x[POS][idx] = 0.0;
+			d_PV_y[NEG][idx] = 0.0;
+			d_PV_y[POS][idx] = 0.0;
+		}
+
+		// If a cell has multiple faces in one direction, find the average gradient value over both faces.
+		sgn = NEG;
+		for (auto& d: x_DIR) {
+			faceCnt = 0;
+			for_each(c->get_nbFaces().at(d)->begin(), c->get_nbFaces().at(d)->end(),
+						[&c, &d, &faceCnt, &sgn, &d_U_x, &d_PV_x ] (Face *f)
+			{
+				for (auto& idx: all_CV) {
+					d_U_x[sgn][idx] = mult[faceCnt]*(d_U_x[sgn][idx] + f->get_F()->get_d_U(idx));
+				}
+
+				for (auto& idx: all_PV) {
+					d_PV_x[sgn][idx] = mult[faceCnt]*(d_PV_x[sgn][idx] + f->get_F()->get_d_PV(idx));
+				}
+				faceCnt++;
+			});
+			sgn=POS;	// DANGER:  assumes that x_DIR is traversed in order:  {W,E}
+		}
+
+		sgn = NEG;
+		for (auto& d: y_DIR) {
+			faceCnt = 0;
+			for_each(c->get_nbFaces().at(d)->begin(), c->get_nbFaces().at(d)->end(),
+						[&c, &d, &faceCnt, &sgn, &d_U_y, &d_PV_y ] (Face *f)
+			{
+				for (auto& idx: all_CV) {
+					d_U_y[sgn][idx] = mult[faceCnt]*(d_U_y[sgn][idx] + f->get_F()->get_d_U(idx));
+				}
+
+				for (auto& idx: all_PV) {
+					d_PV_y[sgn][idx] = mult[faceCnt]*(d_PV_y[sgn][idx] + f->get_F()->get_d_PV(idx));
+				}
+				faceCnt++;
+			});
+			sgn=POS;	// DANGER:  assumes that x_DIR is traversed in order:  {W,E}
+		}
+
+
+		cfdFloat ratio;
+		for (auto& idx: all_CV) {
+			ratio = abs(d_U_x[POS][idx]) < 1e-6  ?   2.0   : d_U_x[NEG][idx]/d_U_x[POS][idx] ;
+			c->get_U()->update_dU(X, idx, d_U_x[POS][idx]*limiter(limType, ratio));
+			ratio = abs(d_U_y[POS][idx]) < 1e-6  ?   2.0   : d_U_y[NEG][idx]/d_U_y[POS][idx] ;
+			c->get_U()->update_dU(Y, idx, d_U_y[POS][idx]*limiter(limType, ratio));
+		}
+
+		for (auto& idx: all_PV) {
+			ratio = abs(d_PV_x[POS][idx]) < 1e-6  ?   2.0   : d_PV_x[NEG][idx]/d_PV_x[POS][idx] ;
+			c->get_U()->update_dPV(X, idx, d_PV_x[POS][idx]*limiter(limType, ratio));
+			ratio = abs(d_PV_y[POS][idx]) < 1e-6  ?   2.0   : d_PV_y[NEG][idx]/d_PV_y[POS][idx] ;
+			c->get_U()->update_dPV(Y, idx, d_PV_y[POS][idx]*limiter(limType, ratio));
+		}
+
+
+
+//		c->get_U()->update_dU(X, idx, mult[faceCnt]*(c->get_U()->get_dU(X,idx) + f->get_F()->get_d_U(idx)));
+
+
 //		c->do_stuff();
 	}
+
 
 
 }
@@ -435,14 +518,17 @@ void Solver::solve() {
 			dt = tEnd - tElapsed;
 
 
-//		resolveCellPrimitives();
-//		calcPVGradientsAtFaces();
-//		limitCellGradients();
+		calcGradientsAtFaces();
+
+		limitCellGradients(SUPERBEE);
+
+//		calcGradientCorrections();
+
 		calcFaceFluxes();
 		doCellTimestep(dt, 0);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 
 		resolveCellPrimitives();
-		calcGradientsAtCells();
+//		calcGradientsAtCells();
 		postProcess();
 
 		tElapsed += dt;
@@ -455,24 +541,24 @@ void Solver::solve() {
 		{
 			cout << "Iter: " << iteration << endl;
 
-			ulong testID0 = Cell::generate_id(0, 16, reflevelMin, reflevelMin);
+//			ulong testID0 = Cell::generate_id(0, 16, reflevelMin, reflevelMin);
+//			for (auto& c: mesh->cellMap) {
+//				Cell *tmpCell = c.second;
+//				if (tmpCell->get_i_idx() == 0 && tmpCell->get_j_idx() == 16) {
+//					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
+//					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
+//											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
+//				}
+//
+//				if (tmpCell->get_i_idx() == 10 && tmpCell->get_j_idx() == 17) {
+//					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
+//					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
+//											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
+//				}
+//			}
 
-			for (auto& c: mesh->cellMap) {
-				Cell *tmpCell = c.second;
-				if (tmpCell->get_i_idx() == 0 && tmpCell->get_j_idx() == 16) {
-					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
-					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
-											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
-				}
-
-				if (tmpCell->get_i_idx() == 10 && tmpCell->get_j_idx() == 17) {
-					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
-					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
-											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
-				}
 
 
-			}
 		}
 
 	}
@@ -534,8 +620,6 @@ void Solver::postProcess() {
 		c->get_U()->set_PHI(AV_SCHLIEREN, (tmp_psi - min_psi)/(max_psi - min_psi));
 
 	}
-
-
 
 
 }

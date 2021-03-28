@@ -25,6 +25,7 @@ class GasDynVar;
 
 const int nEqn = 4;
 
+
 enum ORIENTATION {
 	H=0, V=1
 };
@@ -40,7 +41,7 @@ enum AXIS {
 	X, Y
 };
 
-constexpr std::initializer_list<DIR> all_DIR = {N,S,W,E};
+constexpr std::initializer_list<DIR> all_DIR = {S,N,W,E};
 constexpr std::initializer_list<DIR>   x_DIR = {    W,E};
 constexpr std::initializer_list<DIR>   y_DIR = {S,N    };
 
@@ -125,5 +126,6 @@ typedef int (EulerDisplay::*CB_EulerDisplay_drawFn) (CellMap& cm, FaceMap& fm);
 //typedef GasDynFlux Flux;
 //typedef GasDynVar  ConsVar;
 const cfdFloat GAMMA = 1.4;
+const cfdFloat mult[2] = {1.0, 0.5};
 
 #endif /* EULER_H_ */
