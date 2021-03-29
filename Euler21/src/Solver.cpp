@@ -280,16 +280,16 @@ void Solver::limitCellGradients(LIMITER_TYPE limType) {
 
 		cfdFloat ratio;
 		for (auto& idx: all_CV) {
-			ratio = abs(d_U_x[POS][idx]) < 1e-6  ?   2.0   : d_U_x[NEG][idx]/d_U_x[POS][idx] ;
+			ratio = abs(d_U_x[POS][idx]) < 1e-16  ?   2.0   : d_U_x[NEG][idx]/d_U_x[POS][idx] ;
 			c->get_U()->update_dU(X, idx, d_U_x[POS][idx]*limiter(limType, ratio));
-			ratio = abs(d_U_y[POS][idx]) < 1e-6  ?   2.0   : d_U_y[NEG][idx]/d_U_y[POS][idx] ;
+			ratio = abs(d_U_y[POS][idx]) < 1e-16  ?   2.0   : d_U_y[NEG][idx]/d_U_y[POS][idx] ;
 			c->get_U()->update_dU(Y, idx, d_U_y[POS][idx]*limiter(limType, ratio));
 		}
 
 		for (auto& idx: all_PV) {
-			ratio = abs(d_PV_x[POS][idx]) < 1e-6  ?   2.0   : d_PV_x[NEG][idx]/d_PV_x[POS][idx] ;
+			ratio = abs(d_PV_x[POS][idx]) < 1e-16  ?   2.0   : d_PV_x[NEG][idx]/d_PV_x[POS][idx] ;
 			c->get_U()->update_dPV(X, idx, d_PV_x[POS][idx]*limiter(limType, ratio));
-			ratio = abs(d_PV_y[POS][idx]) < 1e-6  ?   2.0   : d_PV_y[NEG][idx]/d_PV_y[POS][idx] ;
+			ratio = abs(d_PV_y[POS][idx]) < 1e-16  ?   2.0   : d_PV_y[NEG][idx]/d_PV_y[POS][idx] ;
 			c->get_U()->update_dPV(Y, idx, d_PV_y[POS][idx]*limiter(limType, ratio));
 		}
 
@@ -331,7 +331,9 @@ void Solver::calcFaceFluxes() {
 //		f = fp.second;
 
 		orient = f->get_orient();
-	Cell *c = NULL;
+		Cell *c = NULL;
+		cfdFloat dsNeg = 0;
+		cfdFloat dsPos = 0;
 
 		if (f->get_is_bc()) {
 
@@ -343,18 +345,20 @@ void Solver::calcFaceFluxes() {
 
 			if (f->get_nbCell(c, NEG)) {
 				cvNeg = c->get_U();
+				dsNeg = c->get_ds_normal(orient);
 			}
 			else
 				exit(-1);
 
 			if (f->get_nbCell(c, POS)) {
 				cvPos = c->get_U();
+				dsPos = c->get_ds_normal(orient);
 			}
 			else
 				exit(-1);
 
-
-			f->get_F()->calcFluxes(cvNeg, cvPos, orient);
+// NEED TO PROVIDE dx/dy at POS/NEG side of the face... somehow.
+			f->get_F()->calcFluxes(cvNeg, cvPos, orient, dsNeg, dsPos);
 
 
 		}
@@ -520,7 +524,7 @@ void Solver::solve() {
 
 		calcGradientsAtFaces();
 
-		limitCellGradients(SUPERBEE);
+		limitCellGradients(VANALBADA);
 
 //		calcGradientCorrections();
 

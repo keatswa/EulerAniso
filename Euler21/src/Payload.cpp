@@ -22,11 +22,17 @@ PayloadVar::PayloadVar(const PayloadVar &var) {
 //		U[f] = var.U[f];
 //	}
 
-	for (int i = 0 ; i < N_CV ; i++)
+	for (int i = 0 ; i < N_CV ; i++) {
 		U[i] = var.U[i];
+		d_U_x[i] = var.d_U_x[i];
+		d_U_y[i] = var.d_U_y[i];
+	}
 
-	for (int i = 0 ; i < N_PV ; i++)
+	for (int i = 0 ; i < N_PV ; i++) {
 		PV[i] = var.PV[i];
+		d_PV_x[i] = var.d_PV_x[i];
+		d_PV_y[i] = var.d_PV_y[i];
+	}
 
 
 }
@@ -56,7 +62,7 @@ GasDynVar::GasDynVar() {
 }
 
 GasDynVar::GasDynVar(const GasDynVar &var): PayloadVar(var) {
-// Copied CV vector over in base class
+// Copied CV/PV/dU/dPV vectors over in base class
 
 }
 
@@ -212,16 +218,59 @@ GasDynFlux::~GasDynFlux() {
 
 
 
-void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient) {
+void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient, cfdFloat dsNeg, cfdFloat dsPos) {
+
+
+
+	// Calculate gradient correction for CVs and PVs at cvNeg and cvPos
+	// by replacing cell-centred values with face-extrapolated quantities
+
+
+	PayloadVar *tmp_cvNeg = cvNeg->Clone();
+	PayloadVar *tmp_cvPos = cvPos->Clone();
+
+	AXIS axis = normalAxisToOrientation(orient);
+
+	cfdFloat tmpU[NUM_CONSERVED_VARS];
+	cfdFloat tmpPV[NUM_PRIMITIVE_VARS];
+
+	// Option 1 - treat all quantities the same (no logarithmic corrections)
+	for (auto& idx: all_CV) {
+		tmpU[idx] = tmp_cvNeg->get_U(idx) + 0.5*dsNeg*tmp_cvNeg->get_dU(axis, idx);
+	}
+	for (auto& idx: all_PV) {
+		tmpPV[idx] = tmp_cvNeg->get_PV(idx) + 0.5*dsNeg*tmp_cvNeg->get_dPV(axis, idx);
+	}
+
+	tmpU[CV_DENS] = cvNeg->get_U(CV_DENS)*exp(0.5*dsNeg*(1/cvNeg->get_U(CV_DENS))*tmp_cvNeg->get_dU(axis, CV_DENS));
+	tmpPV[CV_DENS] = tmpU[CV_DENS];
+	tmpPV[PV_P] = cvNeg->get_PV(PV_P)*exp(0.5*dsNeg*(1/cvNeg->get_PV(PV_P))*tmp_cvNeg->get_dPV(axis, PV_P));
+
+
+	tmp_cvNeg->update_U(tmpU);
+	tmp_cvNeg->update_PV(tmpPV);
+
+	for (auto& idx: all_CV) {
+		tmpU[idx] = tmp_cvPos->get_U(idx) - 0.5*dsPos*tmp_cvPos->get_dU(axis, idx);
+	}
+	for (auto& idx: all_PV) {
+		tmpPV[idx] = tmp_cvPos->get_PV(idx) - 0.5*dsPos*tmp_cvPos->get_dPV(axis, idx);
+	}
+
+	tmpU[CV_DENS] = cvPos->get_U(CV_DENS)/exp(0.5*dsPos*(1/cvPos->get_U(CV_DENS))*tmp_cvPos->get_dU(axis, CV_DENS));
+	tmpPV[CV_DENS] = tmpU[CV_DENS];
+	tmpPV[PV_P] = cvPos->get_PV(PV_P)/exp(0.5*dsPos*(1/cvPos->get_PV(PV_P))*tmp_cvPos->get_dPV(axis, PV_P));
+
+	tmp_cvPos->update_U(tmpU);
+	tmp_cvPos->update_PV(tmpPV);
+
 
 
 	calcAUSMPlusSplitMachNumber(cvNeg, cvPos, orient);
 
+	// Optional - calc gradient correction here instead
 
-
-
-
-	calcAUSMPlusSplitFluxes(cvNeg, cvPos, orient);
+	calcAUSMPlusSplitFluxes(tmp_cvNeg, tmp_cvPos, orient);
 
 
 

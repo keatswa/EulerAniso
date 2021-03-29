@@ -36,6 +36,14 @@ int dirIsYAxis(DIR d) {
 }
 
 
+AXIS normalAxisToOrientation(ORIENTATION orient) {
+	if (orient == V)
+		return X;
+	else
+		return Y;
+}
+
+
 Mesh::Mesh() {
 	// TODO Auto-generated constructor stub
 

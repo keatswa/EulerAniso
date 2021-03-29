@@ -45,10 +45,10 @@ public:
 	// Calculate fluxes
 	// To be called from Mesh/Solver which provides ConsVar either at opposing cell centers
 	// or interpolated to faces if using a higher order scheme.
-	int calcInterfaceFluxes(cfdFloat order, PayloadVar *cvNeg, PayloadVar *cvPos ) {
-		F->calcFluxes(cvNeg, cvPos, orient);
-		return 0;
-	}
+//	int calcInterfaceFluxes(cfdFloat order, PayloadVar *cvNeg, PayloadVar *cvPos ) {
+//		F->calcFluxes(cvNeg, cvPos, orient);
+//		return 0;
+//	}
 
 
 	// Calculate boundary fluxes by passing the single neighbouring cell's PayloadVar and its

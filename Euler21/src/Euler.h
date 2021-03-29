@@ -55,6 +55,8 @@ extern int dirIsXAxis(DIR d) ;
 
 extern int dirIsYAxis(DIR d) ;
 
+extern AXIS normalAxisToOrientation(ORIENTATION orient);
+
 enum SIGN {
 	NEG=0, POS=1
 };

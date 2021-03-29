@@ -93,6 +93,7 @@ public:
 	virtual cfdFloat get_d_PV_y(PrimitiveVariable idx) {return d_PV_y[idx]; }
 
 	virtual void update_U(cfdFloat *newU) { for (auto& idx: all_CV) { U[idx] = newU[idx]; } }
+	virtual void update_PV(cfdFloat *newPV) { for (auto& idx: all_PV) { PV[idx] = newPV[idx]; } }
 
 	virtual void update_dU(AXIS axis, ConservedVariable idx, cfdFloat value) {
 		switch (axis) {
@@ -125,6 +126,18 @@ public:
 				break;
 			case Y:
 				return d_U_y[idx];
+				break;
+			}
+		return 0;
+	}
+
+	virtual cfdFloat get_dPV(AXIS axis, PrimitiveVariable idx) {
+		switch (axis) {
+			case X:
+				return d_PV_x[idx];
+				break;
+			case Y:
+				return d_PV_y[idx];
 				break;
 			}
 		return 0;
@@ -219,7 +232,7 @@ public:
 
 	virtual void setFluxFromPrimitives(cfdFloat *pv, ORIENTATION orient) = 0;
 
-	virtual void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient) = 0;
+	virtual void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient, cfdFloat dsNeg, cfdFloat dsPos) = 0;
 
 	virtual void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bcType) = 0;
 
@@ -267,7 +280,7 @@ public:
 
 	~GasDynFlux();
 
-	void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient) ;
+	void calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION orient, cfdFloat dsNeg, cfdFloat dsPos) ;
 	void setBoundaryFluxes(PayloadVar *cv, ORIENTATION orient, BCType bcType) ;
 
 	// Used for initial conditions
