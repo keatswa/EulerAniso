@@ -524,7 +524,7 @@ void Solver::solve() {
 
 		calcGradientsAtFaces();
 
-		limitCellGradients(VANALBADA);
+		limitCellGradients(SUPERBEE);
 
 //		calcGradientCorrections();
 
@@ -582,7 +582,7 @@ void Solver::postProcess() {
 	cfdFloat max_abs_rho = -1;
 	cfdFloat k = 2.0;
 	cfdFloat k0 = 0.05;
-	cfdFloat k1 = -0.001;
+	cfdFloat k1 = -0.002;
 
 	cfdFloat abs_rho_0 = -1;
 	cfdFloat abs_rho_1 = -1;
