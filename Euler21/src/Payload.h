@@ -149,6 +149,14 @@ public:
 	virtual void set_PHI(AnalyticVariable idx, cfdFloat value) { PHI[idx] = value; }
 	virtual cfdFloat get_PHI(AnalyticVariable idx) { return PHI[idx]; }
 
+	virtual void set_U_RK(int timestep, ConservedVariable idx, cfdFloat value) {
+		U_RK[timestep][idx] = value;
+	}
+
+	virtual cfdFloat get_U_RK(int timestep, ConservedVariable idx) {
+		return U_RK[timestep][idx];
+	}
+
 
 protected:
 	cfdFloat U[NUM_CONSERVED_VARS];
@@ -160,6 +168,8 @@ protected:
 
 	cfdFloat PHI[NUM_ANALYTIC_VARS];
 
+	// For R-K time stepping
+	cfdFloat U_RK[2][NUM_CONSERVED_VARS];
 
 };
 

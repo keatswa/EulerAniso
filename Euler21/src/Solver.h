@@ -72,7 +72,7 @@ private:
 	void resolveCellPrimitives();   	// Conservative Variables to Primitive Variables
 	void calcGradientsAtFaces();       	// e.g. finite difference across the face
 	void limitCellGradients(LIMITER_TYPE limType);      	// e.g. minmod of face gradients
-	void calcGradientCorrections();		// calculate gradient-corrected U/PV values at faces
+//	void calcGradientCorrections();		// calculate gradient-corrected U/PV values at faces
 	void calcFaceFluxes();			// TBD: parameterize by scheme { AUSM+, VANLEER, HLLC, etc.. }
 	void doCellTimestep(cfdFloat dt, cfdInt rkStage);
 

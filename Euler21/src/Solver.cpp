@@ -375,13 +375,7 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 	cfdFloat flux[4][PayloadVar::N_CV];
 	cfdFloat newU[PayloadVar::N_CV];
 
-
-//	unsigned long Ncells = mesh->vecCellIDs.size();
-//	unsigned long i;
 	Cell *c;
-//	DIR d;
-//	ConservedVariable idx;
-////	CellMap *cm = &(mesh->cellMap);
 	vector<unsigned long>::iterator cit;
 	mesh->init_vecCellIDs();
 #pragma omp parallel for shared(mesh) private(c, flux, newU, fcnt) num_threads(nThreads)
@@ -420,10 +414,44 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 		} // for DIR
 
 
-		for (auto& idx: all_CV) {
-			newU[idx] = c->get_U(idx) - (dt/dx)*(flux[E][idx] - flux[W][idx])
-					                  - (dt/dy)*(flux[N][idx] - flux[S][idx]);
+		if (rkStage == 0) {  // Euler timestep
+			for (auto& idx: all_CV) {
+				newU[idx] = c->get_U(idx) - (dt/dx)*(flux[E][idx] - flux[W][idx])
+										  - (dt/dy)*(flux[N][idx] - flux[S][idx]);
+			}
 		}
+
+
+		if (rkStage == 1) {  // Runge-Kutta stage 1
+			for (auto& idx: all_CV) {
+
+				c->get_U()->set_U_RK(0, idx, c->get_U(idx));
+
+				newU[idx] = c->get_U(idx) - (dt/dx)*(flux[E][idx] - flux[W][idx])
+										  - (dt/dy)*(flux[N][idx] - flux[S][idx]);
+			}
+		}
+
+		if (rkStage == 2) {  // Runge-Kutta stage 2
+			for (auto& idx: all_CV) {
+
+				c->get_U()->set_U_RK(1, idx, c->get_U(idx));
+
+				newU[idx] = 0.5*(c->get_U(idx) + c->get_U()->get_U_RK(0, idx)) -
+						    0.5*(dt/dx)*(flux[E][idx] - flux[W][idx]) -
+							0.5*(dt/dy)*(flux[N][idx] - flux[S][idx]);
+			}
+		}
+
+
+		if (rkStage == 3) {  // Runge-Kutta stage 3
+			for (auto& idx: all_CV) {
+				newU[idx] = 0.5*(c->get_U()->get_U_RK(1, idx) + c->get_U()->get_U_RK(0, idx)) -
+						    0.5*(dt/dx)*(flux[E][idx] - flux[W][idx]) -
+							0.5*(dt/dy)*(flux[N][idx] - flux[S][idx]);
+			}
+		}
+
 
 		c->get_U()->update_U(newU);
 
@@ -522,17 +550,36 @@ void Solver::solve() {
 			dt = tEnd - tElapsed;
 
 
+		// EULER TIMESTEPPING
+//		calcGradientsAtFaces();
+//		limitCellGradients(SUPERBEE);
+//		calcFaceFluxes();
+//		doCellTimestep(dt, 0);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
+//		resolveCellPrimitives();
+
+		// RUNGE-KUTTA TIMESTEPPING
 		calcGradientsAtFaces();
-
 		limitCellGradients(SUPERBEE);
-
-//		calcGradientCorrections();
-
 		calcFaceFluxes();
-		doCellTimestep(dt, 0);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
-
+		doCellTimestep(dt, 1);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 		resolveCellPrimitives();
-//		calcGradientsAtCells();
+
+		calcGradientsAtFaces();
+		limitCellGradients(SUPERBEE);
+		calcFaceFluxes();
+		doCellTimestep(dt, 2);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
+		resolveCellPrimitives();
+
+		calcGradientsAtFaces();
+		limitCellGradients(SUPERBEE);
+		calcFaceFluxes();
+		doCellTimestep(dt, 3);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
+		resolveCellPrimitives();
+
+
+
+
+		calcGradientsAtCells();
 		postProcess();
 
 		tElapsed += dt;
@@ -543,26 +590,7 @@ void Solver::solve() {
 
 		if (iteration % 10 == 0)
 		{
-			cout << "Iter: " << iteration << endl;
-
-//			ulong testID0 = Cell::generate_id(0, 16, reflevelMin, reflevelMin);
-//			for (auto& c: mesh->cellMap) {
-//				Cell *tmpCell = c.second;
-//				if (tmpCell->get_i_idx() == 0 && tmpCell->get_j_idx() == 16) {
-//					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
-//					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
-//											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
-//				}
-//
-//				if (tmpCell->get_i_idx() == 10 && tmpCell->get_j_idx() == 17) {
-//					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
-//					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
-//											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
-//				}
-//			}
-
-
-
+			cout << "Iter: " << iteration << "     Elapsed: " << tElapsed << endl;
 		}
 
 	}
@@ -627,3 +655,30 @@ void Solver::postProcess() {
 
 
 }
+
+
+
+
+
+
+
+
+//// PARKING LOT
+
+// Generate Cell IDs from location
+//			ulong testID0 = Cell::generate_id(0, 16, reflevelMin, reflevelMin);
+//			for (auto& c: mesh->cellMap) {
+//				Cell *tmpCell = c.second;
+//				if (tmpCell->get_i_idx() == 0 && tmpCell->get_j_idx() == 16) {
+//					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
+//					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
+//											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
+//				}
+//
+//				if (tmpCell->get_i_idx() == 10 && tmpCell->get_j_idx() == 17) {
+//					cout << "testID: " << testID0  << ", j_idx: " << tmpCell->get_j_idx() << endl;
+//					cout << " genID: " << Cell::generate_id(tmpCell->get_i_idx(), tmpCell->get_j_idx(),
+//											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
+//				}
+//			}
+
