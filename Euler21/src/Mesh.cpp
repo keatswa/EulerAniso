@@ -57,6 +57,43 @@ Mesh::~Mesh() {
 
 
 // Refine from level 0 to target 'reflvl'
+void Mesh::doAnisotropicRefine(unsigned int min_reflvl, unsigned int max_reflvl, cfdFloat errorTol) {
+
+	int numRefinedAtLvl = 0;
+
+	for (unsigned int lvl = min_reflvl ; lvl < max_reflvl ; lvl++) {
+
+		CellMap::iterator citor = cellMap.begin();
+		while (citor != cellMap.end()) {
+			Cell *tgtCell = citor->second;
+
+			if (tgtCell->get_dx() > tgtCell->get_target_dx_O1(errorTol)) {
+				tgtCell->refFlags.set(doRefineX);
+				tgtCell->refFlags.reset(wasXRefined);
+				tgtCell->refFlags.reset(doCoarsenX);
+			}
+
+			if (tgtCell->get_dy() > tgtCell->get_target_dy_O1(errorTol)) {
+				tgtCell->refFlags.set(doRefineY);
+				tgtCell->refFlags.reset(wasYRefined);
+				tgtCell->refFlags.reset(doCoarsenY);
+			}
+
+			*citor++;
+		}
+
+		numRefinedAtLvl = refineCells(lvl);
+
+		if (numRefinedAtLvl > 0)
+			maxRefLvl = lvl;        // Better would be to track this independently by polling the Faces/Cells in the Mesh
+	}
+}
+
+
+
+
+
+// Refine from level 0 to target 'reflvl'
 void Mesh::doUniformRefine(unsigned int reflvl) {
 
 	int numRefinedAtLvl = 0;
@@ -83,6 +120,69 @@ void Mesh::doUniformRefine(unsigned int reflvl) {
 }
 
 
+// Attempt to coarsen cells to reach 'reflvl' refinement level
+void Mesh::doAnisotropicCoarsen(unsigned int min_reflvl, unsigned int max_reflvl, cfdFloat errorTol) {
+
+	int numCoarsenedAtLvl = 0;
+
+
+	for (unsigned int lvl = max_reflvl ; lvl > min_reflvl ; lvl--) {
+
+
+		FaceMap::iterator fitor = faceMap.begin();
+		while (fitor != faceMap.end()) {
+			bool isBC = false;
+			bool doCoarsenNegCell = false;
+			bool doCoarsenPosCell = false;
+
+			Face *f = fitor->second;
+			Cell *c = NULL;
+			if (f->get_orient() == V) {
+				if (f->get_nbCell(c, NEG)) {
+					if (c->get_target_dx_O1(errorTol) > 2.0*c->get_dx())
+						doCoarsenNegCell = true;
+				}
+				else
+					isBC = true;
+
+				if (f->get_nbCell(c, POS)) {
+					if (c->get_target_dx_O1(errorTol) > 2.0*c->get_dx())
+						doCoarsenPosCell = true;
+				}
+				else
+					isBC = true;
+			}
+
+			if (f->get_orient() == H) {
+				if (f->get_nbCell(c, NEG)) {
+					if (c->get_target_dy_O1(errorTol) > 2.0*c->get_dy())
+						doCoarsenNegCell = true;
+				}
+				else
+					isBC = true;
+
+				if (f->get_nbCell(c, POS)) {
+					if (c->get_target_dy_O1(errorTol) > 2.0*c->get_dy())
+						doCoarsenPosCell = true;
+				}
+				else
+					isBC = true;
+			}
+
+			if (!isBC && doCoarsenNegCell && doCoarsenPosCell)
+				f->faceRefFlags.set(doCoarsen);
+
+
+			fitor++;
+		}
+
+		numCoarsenedAtLvl += coarsenCells(lvl);
+
+	}
+
+	cout << "Mesh::doAnisotropicCoarsen: Coarsened " << numCoarsenedAtLvl << " Faces." << endl;
+
+}
 
 // Attempt to coarsen cells to reach 'reflvl' refinement level
 void Mesh::doUniformCoarsen(unsigned int reflvl) {
@@ -605,6 +705,8 @@ bool Mesh::coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient) {
 	}
 
 
+	// 3.5  Solution averaging
+	// @TBD
 
 
 

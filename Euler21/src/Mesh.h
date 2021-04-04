@@ -123,6 +123,12 @@ public:
 
 	void addAndRemapFaceToCell(Cell *c0, Cell *c1, DIR d);
 
+	// Refine Anisotropically between bracketing refinement levels
+	void doAnisotropicRefine(unsigned int min_reflvl, unsigned int max_reflvl, cfdFloat errorTol);
+
+	// Coarsen Anisotropically between bracketing refinement levels
+	void doAnisotropicCoarsen(unsigned int min_reflvl, unsigned int max_reflvl, cfdFloat errorTol);
+
 	// Refine from level 0 to target 'reflvl'
 	void doUniformRefine(unsigned int reflvl);
 

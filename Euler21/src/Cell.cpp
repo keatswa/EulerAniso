@@ -86,12 +86,12 @@ Cell::~Cell() {
 }
 
 //STATIC
-RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0) { //, unsigned int newCellID) {
+RefinedCellFaceGroup Cell::createRefinedCell(ORIENTATION orient, Cell *c0) {
 
 	FaceDeque *newFaces = new FaceDeque();
 
 	Cell *c1 = new Cell(*c0);
-//	c1->id = newCellID;
+//	c1 has c0's cloned U.  Alternative: interpolate c0 and c1 cell-centred U based on gradient info.
 
 	c0->refFlags.reset(doRecycleCell);
 	c1->refFlags.reset(doRecycleCell);

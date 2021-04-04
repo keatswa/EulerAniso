@@ -39,14 +39,30 @@ private:
 	PayloadVar *U;
 
 	// Keep a static copy of dt to avoid passing it
-	inline static cfdFloat dt = -1;
+//	inline static cfdFloat dt = -1;
 
 public:
 	Cell();
 	Cell(const Cell& c);
 	virtual ~Cell();
 
-	inline static void set_dt(cfdFloat _dt) { dt = _dt; }
+//	inline static void set_dt(cfdFloat _dt) { dt = _dt; }
+
+	inline cfdFloat get_target_dx_O1(cfdFloat z) {
+		cfdFloat alpha = 0.01*z;
+		cfdFloat d_dx = abs(U->get_dU(X, CV_DENS)) + alpha;
+		cfdFloat d_dy = abs(U->get_dU(Y, CV_DENS)) + alpha;
+		return cbrt(2.0*z*(d_dy)/(d_dx*d_dx));
+	}
+
+
+	inline cfdFloat get_target_dy_O1(cfdFloat z) {
+		cfdFloat alpha = 0.01*z;
+		cfdFloat d_dx = abs(U->get_dU(X, CV_DENS)) + alpha;
+		cfdFloat d_dy = abs(U->get_dU(Y, CV_DENS)) + alpha;
+		return cbrt(2.0*z*(d_dx)/(d_dy*d_dy));
+	}
+
 
 	PayloadVar* get_U() { return U; }
 

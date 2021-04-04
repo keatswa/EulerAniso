@@ -541,10 +541,39 @@ void Solver::solve() {
 
 	do {
 
+		// Refine every N timesteps
+		if (iteration % 5 == 0) {
+
+			calcGradientsAtCells();
+			mesh->doAnisotropicRefine(reflevelMin, reflevelMax, errorTol);
+
+			calcGradientsAtCells();
+			postProcess();
+			if (((display)->*(drawFn))(mesh->cellMap, mesh->faceMap) == -1)
+				exit(1);
+		}
+
+
+
+		// Coarsen every M timesteps
+		if (iteration % 20 == 0) {
+
+			calcGradientsAtCells();
+			mesh->doAnisotropicCoarsen(reflevelMin, reflevelMax, errorTol);
+
+			calcGradientsAtCells();
+			postProcess();
+			if (((display)->*(drawFn))(mesh->cellMap, mesh->faceMap) == -1)
+				exit(1);
+		}
+
+
+
+
 		// Calculate timestep
 		dt = maxCFL*calcMinWavePeriod();
 
-		Cell::set_dt(dt);
+//		Cell::set_dt(dt);
 
 		if ((dt + tElapsed) > tEnd)
 			dt = tEnd - tElapsed;
@@ -559,19 +588,19 @@ void Solver::solve() {
 
 		// RUNGE-KUTTA TIMESTEPPING
 		calcGradientsAtFaces();
-		limitCellGradients(SUPERBEE);
+		limitCellGradients(MINMOD);
 		calcFaceFluxes();
 		doCellTimestep(dt, 1);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 		resolveCellPrimitives();
 
 		calcGradientsAtFaces();
-		limitCellGradients(SUPERBEE);
+		limitCellGradients(MINMOD);
 		calcFaceFluxes();
 		doCellTimestep(dt, 2);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 		resolveCellPrimitives();
 
 		calcGradientsAtFaces();
-		limitCellGradients(SUPERBEE);
+		limitCellGradients(MINMOD);
 		calcFaceFluxes();
 		doCellTimestep(dt, 3);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 		resolveCellPrimitives();
