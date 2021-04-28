@@ -38,6 +38,8 @@ public:
 
 	int checkQuitEvent() {
 
+		getSDLEvent();
+
 		if (SDL_PollEvent(&e)) {
 			if (e.type == SDL_QUIT || e.type == SDL_MOUSEBUTTONUP || e.type == SDL_MOUSEBUTTONDOWN) {
 				return(1);
@@ -45,6 +47,28 @@ public:
 		}
 		return(0);
 	}
+
+// 768 KEYDOWN
+// 769 KEYUP
+	uint getSDLEvent() {
+
+		if (SDL_PollEvent(&e)) {
+//			cout << "EVENT type:  " << e.type << endl;
+//			cout << "EVENT     :  " << e.wheel.type << endl;
+
+			if (e.type == SDL_KEYDOWN)
+				return SDL_KEYDOWN;
+
+			if (e.type == SDL_MOUSEBUTTONDOWN)
+				return SDL_MOUSEBUTTONDOWN;
+
+
+		}
+
+		return(0);
+
+	}
+
 
 private:
 

@@ -157,6 +157,8 @@ public:
 		return U_RK[timestep][idx];
 	}
 
+	virtual void calc_average_from_src(PayloadVar *srcU);
+
 
 protected:
 	cfdFloat U[NUM_CONSERVED_VARS];

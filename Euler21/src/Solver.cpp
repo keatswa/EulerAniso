@@ -298,7 +298,6 @@ void Solver::limitCellGradients(LIMITER_TYPE limType) {
 //		c->get_U()->update_dU(X, idx, mult[faceCnt]*(c->get_U()->get_dU(X,idx) + f->get_F()->get_d_U(idx)));
 
 
-//		c->do_stuff();
 	}
 
 
@@ -545,27 +544,32 @@ void Solver::solve() {
 		if (iteration % 5 == 0) {
 
 			calcGradientsAtCells();
-			mesh->doAnisotropicRefine(reflevelMin, reflevelMax, errorTol);
 
-			calcGradientsAtCells();
-			postProcess();
-			if (((display)->*(drawFn))(mesh->cellMap, mesh->faceMap) == -1)
-				exit(1);
+			for (unsigned int lvl = reflevelMin; lvl < reflevelMax ; lvl++) {
+				mesh->doAnisotropicRefine(lvl, lvl+1, errorTol);
+				calcGradientsAtCells();
+				postProcess();
+
+				if (((display)->*(drawFn))(mesh->cellMap, mesh->faceMap) == -1)
+					exit(1);
+
+			}
+
 		}
 
 
 
 		// Coarsen every M timesteps
-		if (iteration % 20 == 0) {
-
-			calcGradientsAtCells();
-			mesh->doAnisotropicCoarsen(reflevelMin, reflevelMax, errorTol);
-
-			calcGradientsAtCells();
-			postProcess();
-			if (((display)->*(drawFn))(mesh->cellMap, mesh->faceMap) == -1)
-				exit(1);
-		}
+//		if (iteration % 20 == 0) {
+//
+//			calcGradientsAtCells();
+//			mesh->doAnisotropicCoarsen(reflevelMin, reflevelMax, errorTol);
+//
+//			calcGradientsAtCells();
+//			postProcess();
+//			if (((display)->*(drawFn))(mesh->cellMap, mesh->faceMap) == -1)
+//				exit(1);
+//		}
 
 
 

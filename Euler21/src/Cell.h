@@ -75,6 +75,7 @@ public:
 
 	void setCVfromPV(cfdFloat *icPVarr){ U->setCVFromPrimitives(icPVarr); }
 
+	void calc_average_U(PayloadVar *srcU) { U->calc_average_from_src(srcU); }
 
 	static RefinedCellFaceGroup createRefinedCell(ORIENTATION orient, Cell* c0); //, unsigned int newCellID);
 

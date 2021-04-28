@@ -12,7 +12,7 @@
 #include <iostream>
 #include <climits>
 
-#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
+//#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 
 AXIS dirToAxis(DIR d) {
 	if (d == N || d == S)
@@ -63,24 +63,125 @@ void Mesh::doAnisotropicRefine(unsigned int min_reflvl, unsigned int max_reflvl,
 
 	for (unsigned int lvl = min_reflvl ; lvl < max_reflvl ; lvl++) {
 
-		CellMap::iterator citor = cellMap.begin();
-		while (citor != cellMap.end()) {
-			Cell *tgtCell = citor->second;
 
-			if (tgtCell->get_dx() > tgtCell->get_target_dx_O1(errorTol)) {
-				tgtCell->refFlags.set(doRefineX);
-				tgtCell->refFlags.reset(wasXRefined);
-				tgtCell->refFlags.reset(doCoarsenX);
+		FaceMap::iterator fitor = faceMap.begin();
+		while (fitor != faceMap.end()) {
+			bool isBC = false;
+			bool doRefineNegCell = false;
+			bool doRefinePosCell = false;
+
+			Face *f = fitor->second;
+			Cell *c_neg = NULL;
+			Cell *c_pos = NULL;
+
+			if (f->get_orient() == V) {
+				if (f->get_nbCell(c_neg, NEG)) {
+					if (c_neg->get_target_dx_O1(errorTol) < c_neg->get_dx()) {
+						doRefineNegCell = true;
+						c_neg->refFlags.set(doRefineX);
+						c_neg->refFlags.reset(wasXRefined);
+						c_neg->refFlags.reset(doCoarsenX);
+					}
+				}
+				else
+					isBC = true;
+
+				if (f->get_nbCell(c_pos, POS)) {
+					if (c_pos->get_target_dx_O1(errorTol) < c_pos->get_dx()) {
+						doRefinePosCell = true;
+						c_pos->refFlags.set(doRefineX);
+						c_pos->refFlags.reset(wasXRefined);
+						c_pos->refFlags.reset(doCoarsenX);
+					}
+				}
+				else
+					isBC = true;
 			}
 
-			if (tgtCell->get_dy() > tgtCell->get_target_dy_O1(errorTol)) {
-				tgtCell->refFlags.set(doRefineY);
-				tgtCell->refFlags.reset(wasYRefined);
-				tgtCell->refFlags.reset(doCoarsenY);
+			if (!isBC) {
+				if (doRefinePosCell) { // then also refine the neg cell and vice versa
+					c_neg->refFlags.set(doRefineX);
+					c_neg->refFlags.reset(wasXRefined);
+					c_neg->refFlags.reset(doCoarsenX);
+				}
+
+				if (doRefineNegCell) { // then also refine the pos cell and vice versa
+					c_pos->refFlags.set(doRefineX);
+					c_pos->refFlags.reset(wasXRefined);
+					c_pos->refFlags.reset(doCoarsenX);
+				}
 			}
 
-			*citor++;
+
+			if (f->get_orient() == H) {
+				if (f->get_nbCell(c_neg, NEG)) {
+					if (c_neg->get_target_dy_O1(errorTol) < c_neg->get_dy()) {
+						doRefineNegCell = true;
+						c_neg->refFlags.set(doRefineY);
+						c_neg->refFlags.reset(wasYRefined);
+						c_neg->refFlags.reset(doCoarsenY);
+					}
+				}
+				else
+					isBC = true;
+
+				if (f->get_nbCell(c_pos, POS)) {
+					if (c_pos->get_target_dy_O1(errorTol) < c_pos->get_dy()) {
+						doRefinePosCell = true;
+						c_pos->refFlags.set(doRefineY);
+						c_pos->refFlags.reset(wasYRefined);
+						c_pos->refFlags.reset(doCoarsenY);
+					}
+				}
+				else
+					isBC = true;
+			}
+
+			if (!isBC) {
+				if (doRefinePosCell) { // then also refine the neg cell and vice versa
+					c_neg->refFlags.set(doRefineY);
+					c_neg->refFlags.reset(wasYRefined);
+					c_neg->refFlags.reset(doCoarsenY);
+				}
+
+				if (doRefineNegCell) { // then also refine the pos cell and vice versa
+					c_pos->refFlags.set(doRefineY);
+					c_pos->refFlags.reset(wasYRefined);
+					c_pos->refFlags.reset(doCoarsenY);
+				}
+			}
+
+
+			fitor++;
 		}
+
+
+
+
+
+
+
+
+
+
+//		CellMap::iterator citor = cellMap.begin();
+//		while (citor != cellMap.end()) {
+//			Cell *tgtCell = citor->second;
+//
+//			if (tgtCell->get_dx() > tgtCell->get_target_dx_O1(errorTol)) {
+//				tgtCell->refFlags.set(doRefineX);
+//				tgtCell->refFlags.reset(wasXRefined);
+//				tgtCell->refFlags.reset(doCoarsenX);
+//			}
+//
+//			if (tgtCell->get_dy() > tgtCell->get_target_dy_O1(errorTol)) {
+//				tgtCell->refFlags.set(doRefineY);
+//				tgtCell->refFlags.reset(wasYRefined);
+//				tgtCell->refFlags.reset(doCoarsenY);
+//			}
+//
+//			*citor++;
+//		}
 
 		numRefinedAtLvl = refineCells(lvl);
 
@@ -706,8 +807,8 @@ bool Mesh::coarsenFace(Face *f, unsigned int lvl, ORIENTATION orient) {
 
 
 	// 3.5  Solution averaging
-	// @TBD
-
+	//
+	c[0]->calc_average_U(c[1]->get_U());
 
 
 	// 4.  Recycle c1 and f

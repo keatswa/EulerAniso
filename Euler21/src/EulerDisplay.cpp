@@ -127,11 +127,18 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 
 	}
 
-	if(checkQuitEvent() == 1) {
-		return(-1);
+	while (getSDLEvent() != SDL_KEYDOWN) {
+
+
+
+//		if(checkQuitEvent() == 1) {
+		if (getSDLEvent() == SDL_MOUSEBUTTONDOWN) {
+			return(-1);
+		}
+
+		SDL_Delay(10 );
 	}
 
-	SDL_Delay(5);
 	SDL_RenderPresent(renderer);
 	return(0);
 

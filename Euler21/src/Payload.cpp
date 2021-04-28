@@ -57,6 +57,22 @@ PayloadVar::~PayloadVar() {
 }
 
 
+
+void PayloadVar::calc_average_from_src(PayloadVar *srcU) {
+
+	for (auto& f: all_CV) {
+		U[f] = 0.5*(U[f] + srcU->U[f]);
+	}
+
+	for (auto& f: all_PV) {
+		PV[f] = 0.5*(PV[f] + srcU->PV[f]);
+	}
+
+
+}
+
+
+
 GasDynVar::GasDynVar() {
 
 }
@@ -245,7 +261,7 @@ void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION or
 	tmpU[CV_NRG] = cvNeg->get_U(CV_NRG)*exp(0.5*dsNeg*(1/cvNeg->get_U(CV_NRG))*tmp_cvNeg->get_dU(axis, CV_NRG));
 	tmpU[CV_DENS] = cvNeg->get_U(CV_DENS)*exp(0.5*dsNeg*(1/cvNeg->get_U(CV_DENS))*tmp_cvNeg->get_dU(axis, CV_DENS));
 	tmpPV[CV_DENS] = tmpU[CV_DENS];
-	tmpPV[PV_P] = cvNeg->get_PV(PV_P)*exp(0.5*dsNeg*(1/cvNeg->get_PV(PV_P))*tmp_cvNeg->get_dPV(axis, PV_P));
+//	tmpPV[PV_P] = cvNeg->get_PV(PV_P)*exp(0.5*dsNeg*(1/cvNeg->get_PV(PV_P))*tmp_cvNeg->get_dPV(axis, PV_P));
 
 
 	tmp_cvNeg->update_U(tmpU);
@@ -261,7 +277,7 @@ void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION or
 	tmpU[CV_NRG] = cvPos->get_U(CV_NRG)/exp(0.5*dsPos*(1/cvPos->get_U(CV_NRG))*tmp_cvPos->get_dU(axis, CV_NRG));
 	tmpU[CV_DENS] = cvPos->get_U(CV_DENS)/exp(0.5*dsPos*(1/cvPos->get_U(CV_DENS))*tmp_cvPos->get_dU(axis, CV_DENS));
 	tmpPV[CV_DENS] = tmpU[CV_DENS];
-	tmpPV[PV_P] = cvPos->get_PV(PV_P)/exp(0.5*dsPos*(1/cvPos->get_PV(PV_P))*tmp_cvPos->get_dPV(axis, PV_P));
+//	tmpPV[PV_P] = cvPos->get_PV(PV_P)/exp(0.5*dsPos*(1/cvPos->get_PV(PV_P))*tmp_cvPos->get_dPV(axis, PV_P));
 
 	tmp_cvPos->update_U(tmpU);
 	tmp_cvPos->update_PV(tmpPV);
@@ -554,3 +570,5 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 
 
 }
+
+
