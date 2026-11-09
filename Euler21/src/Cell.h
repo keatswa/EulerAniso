@@ -13,6 +13,7 @@
 #include "Face.h"
 #include "Payload.h"
 #include <bitset>
+#include <cmath>
 #include <iostream>
 
 

@@ -9,6 +9,7 @@
 #define PAYLOAD_H_
 
 #include "Euler.h"
+#include <cmath>
 #include <functional>
 
 enum ProblemType
