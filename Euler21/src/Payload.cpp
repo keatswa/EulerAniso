@@ -6,6 +6,7 @@
  */
 
 #include "Payload.h"
+#include <cstdlib>
 #include <iostream>
 
 //*****************************************************************************
@@ -14,6 +15,23 @@
 
 
 PayloadVar::PayloadVar() {
+	for (int i = 0; i < N_CV; ++i) {
+		U[i] = 0.0;
+		d_U_x[i] = 0.0;
+		d_U_y[i] = 0.0;
+		U_RK[0][i] = 0.0;
+		U_RK[1][i] = 0.0;
+	}
+
+	for (int i = 0; i < N_PV; ++i) {
+		PV[i] = 0.0;
+		d_PV_x[i] = 0.0;
+		d_PV_y[i] = 0.0;
+	}
+
+	for (int i = 0; i < NUM_ANALYTIC_VARS; ++i) {
+		PHI[i] = 0.0;
+	}
 }
 
 PayloadVar::PayloadVar(const PayloadVar &var) {
@@ -34,6 +52,15 @@ PayloadVar::PayloadVar(const PayloadVar &var) {
 		d_PV_y[i] = var.d_PV_y[i];
 	}
 
+	for (int i = 0; i < NUM_ANALYTIC_VARS; ++i) {
+		PHI[i] = var.PHI[i];
+	}
+
+	for (int stage = 0; stage < 2; ++stage) {
+		for (int i = 0; i < N_CV; ++i) {
+			U_RK[stage][i] = var.U_RK[stage][i];
+		}
+	}
 
 }
 
@@ -128,11 +155,26 @@ void GasDynVar::resolvePrimitives() {
 	PV[PV_A] = sqrt((GAMMA*PV[PV_P])/U[CV_DENS]);
 	PV[PV_VSQ] = PV[PV_U]*PV[PV_U] + PV[PV_V]*PV[PV_V];
 
-	if (isnan(PV[PV_A]))
-	{
-		cout << "PV_A is NaN!" << endl;
-		exit(-1);
-	}
+
+    
+    if (isnan(PV[PV_RHO]) || isnan(PV[PV_U]) || isnan(PV[PV_V]) || isnan(PV[PV_P]) || isnan(PV[PV_A]) || isnan(PV[PV_VSQ]))
+    {
+        cout << "NaN in resolvePrimitives()!" << endl;
+        cout << "U = [";
+        for (auto& idx: all_CV) {
+        	cout << U[idx] << ", ";
+        }
+        cout << "]" << endl;
+        cout << "PV = [";
+        for (auto& idx: all_PV) {
+        	cout << PV[idx] << ", ";
+        }
+        cout << "]" << endl;
+        exit(-1);
+    }
+
+
+
 
 }
 
@@ -145,13 +187,25 @@ void GasDynVar::resolvePrimitives() {
 
 
 PayloadFlux::PayloadFlux() {
+	for (auto& idx: all_CV) {
+		F[idx] = 0.0;
+		d_U[idx] = 0.0;
+	}
 
+	for (int i = 0; i < NUM_PRIMITIVE_VARS; ++i) {
+		d_PV[i] = 0.0;
+	}
 }
 
 PayloadFlux::PayloadFlux(const PayloadFlux &flux) {
 
 	for (auto& f: all_CV) {
 		F[f] = flux.F[f];
+		d_U[f] = flux.d_U[f];
+	}
+
+	for (int i = 0; i < NUM_PRIMITIVE_VARS; ++i) {
+		d_PV[i] = flux.d_PV[i];
 	}
 }
 
@@ -194,9 +248,13 @@ void PayloadFlux::setGradient(PayloadVar *cv, ORIENTATION orient) {
 
 
 void PayloadFlux::zeroGradient() {
-		for (auto& idx: all_PV) {
-			d_PV[idx] = 0.0;
-		}
+	for (int i = 0; i < NUM_PRIMITIVE_VARS; ++i) {
+		d_PV[i] = 0.0;
+	}
+
+	for (auto& idx: all_CV) {
+		d_U[idx] = 0.0;
+	}
 }
 
 
@@ -206,11 +264,29 @@ void PayloadFlux::calcGradient(PayloadVar *cvNeg, PayloadVar *cvPos, cfdFloat ds
 
 	for (auto& idx: all_PV) {
 		d_PV[idx] = ds_inv*(cvPos->get_PV(idx) - cvNeg->get_PV(idx));
+		if (!std::isfinite(d_PV[idx])) {
+			std::cerr << "Non-finite primitive gradient in PayloadFlux::calcGradient(): "
+			          << "variable=" << idx
+			          << ", ds=" << ds
+			          << ", negativeValue=" << cvNeg->get_PV(idx)
+			          << ", positiveValue=" << cvPos->get_PV(idx)
+			          << ", gradient=" << d_PV[idx] << std::endl;
+			std::exit(EXIT_FAILURE);
+		}
 	}
 
 
 	for (auto& idx: all_CV) {
 		d_U[idx] = ds_inv*(cvPos->get_U(idx) - cvNeg->get_U(idx));
+		if (!std::isfinite(d_U[idx])) {
+			std::cerr << "Non-finite conserved gradient in PayloadFlux::calcGradient(): "
+			          << "variable=" << idx
+			          << ", ds=" << ds
+			          << ", negativeValue=" << cvNeg->get_U(idx)
+			          << ", positiveValue=" << cvPos->get_U(idx)
+			          << ", gradient=" << d_U[idx] << std::endl;
+			std::exit(EXIT_FAILURE);
+		}
 	}
 
 
@@ -275,7 +351,23 @@ void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION or
 	}
 
 	tmpU[CV_NRG] = cvPos->get_U(CV_NRG)/exp(0.5*dsPos*(1/cvPos->get_U(CV_NRG))*tmp_cvPos->get_dU(axis, CV_NRG));
-	tmpU[CV_DENS] = cvPos->get_U(CV_DENS)/exp(0.5*dsPos*(1/cvPos->get_U(CV_DENS))*tmp_cvPos->get_dU(axis, CV_DENS));
+
+// added check
+    cfdFloat posDensityGradient = tmp_cvPos->get_dU(axis, CV_DENS);
+	if (!std::isfinite(posDensityGradient)) {
+#pragma omp critical
+		{
+			std::cerr << "Non-finite positive-side density gradient in calcFluxes(): "
+			          << "axis=" << (axis == X ? "X" : "Y")
+			          << ", cvPos density=" << cvPos->get_U(CV_DENS)
+                      << ", cvNeg density=" << cvNeg->get_U(CV_DENS)
+			          << ", dsPos=" << dsPos
+			          << ", gradient=" << posDensityGradient << std::endl;
+		}
+	}
+// end added check
+
+    tmpU[CV_DENS] = cvPos->get_U(CV_DENS)/exp(0.5*dsPos*(1/cvPos->get_U(CV_DENS))*posDensityGradient);
 	tmpPV[CV_DENS] = tmpU[CV_DENS];
 //	tmpPV[PV_P] = cvPos->get_PV(PV_P)/exp(0.5*dsPos*(1/cvPos->get_PV(PV_P))*tmp_cvPos->get_dPV(axis, PV_P));
 
@@ -289,6 +381,32 @@ void GasDynFlux::calcFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, ORIENTATION or
 	// Optional - calc gradient correction here instead
 
 	calcAUSMPlusSplitFluxes(tmp_cvNeg, tmp_cvPos, orient);
+
+
+    if (isnan(tmp_cvPos->get_U(CV_DENS))) { //} || isnan(tmp_cvPos->get_U(CV_DENS))) {
+        cout << "NaN in calcFluxes()!" << endl;
+        cout << "tmp_cvNeg U = [";
+        for (auto& idx: all_CV) {
+        	cout << tmp_cvNeg->get_U(idx) << ", ";
+        }
+        cout << "]" << endl;
+        cout << "tmp_cvNeg PV = [";
+        for (auto& idx: all_PV) {
+        	cout << tmp_cvNeg->get_PV(idx) << ", ";
+        }
+        cout << "]" << endl;
+        cout << "tmp_cvPos U = [";
+        for (auto& idx: all_CV) {
+        	cout << tmp_cvPos->get_U(idx) << ", ";
+        }
+        cout << "]" << endl;
+        cout << "tmp_cvPos PV = [";
+        for (auto& idx: all_PV) {
+        	cout << tmp_cvPos->get_PV(idx) << ", ";
+        }
+        cout << "]" << endl;
+//        exit(-1);
+    }
 
 
 	delete(tmp_cvNeg);
@@ -570,5 +688,3 @@ void GasDynFlux::calcAUSMPlusSplitFluxes(PayloadVar *cvNeg, PayloadVar *cvPos, O
 
 
 }
-
-

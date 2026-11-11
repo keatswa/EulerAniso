@@ -26,7 +26,20 @@ void Solver::resolveCellPrimitives() {
 	for (cit = mesh->vecCellIDs.begin(); cit < mesh->vecCellIDs.end(); cit++) {
 		c = mesh->cellMap.at(*cit);
 
-//		tmpU = c->get_U();
+		PayloadVar *tmpU = c->get_U();
+
+        cfdFloat tmpP = tmpU->get_U(CV_NRG)-0.5*tmpU->get_U(CV_DENS)*((tmpU->get_U(CV_XMOM)/tmpU->get_U(CV_DENS))*(tmpU->get_U(CV_XMOM)/tmpU->get_U(CV_DENS)) + (tmpU->get_U(CV_YMOM)/tmpU->get_U(CV_DENS))*(tmpU->get_U(CV_YMOM)/tmpU->get_U(CV_DENS)));
+
+        if ( isnan(tmpU->get_U(CV_DENS))) {
+        	cout << " NaN density in cell " << c->get_id() << " at x = " << c->get_x() << ", y = " << c->get_y() << endl;
+        	cout << "U = [";
+        	for (auto& idx: all_CV) {
+        		cout << tmpU->get_U(idx) << ", ";
+        	}
+        	cout << "]" << endl;
+        	exit(-1);
+        }
+
 //		tmpU->resolvePrimitives();
 		c->get_U()->resolvePrimitives();
 	}
@@ -176,7 +189,8 @@ void Solver::calcGradientsAtFaces() {
 			if (f->get_bcType() == OUTLET) {
 				f->get_F()->zeroGradient();
 			} else {  // WALL, INLET, ?
-				f->get_F()->setGradient(f->getBoundaryCell()->get_U(), orient);
+				f->get_F()->zeroGradient();
+//				f->get_F()->setGradient(f->getBoundaryCell()->get_U(), orient);
 			}
 
 		} else {   // FACE IS NOT A BOUNDARY - calc gradient from nb cells
@@ -198,6 +212,7 @@ void Solver::calcGradientsAtFaces() {
 			ds = 0.5*(ds_pos + ds_neg);
 
 			f->get_F()->calcGradient(cvNeg, cvPos, ds);
+
 		}
 	}
 }
@@ -280,16 +295,16 @@ void Solver::limitCellGradients(LIMITER_TYPE limType) {
 
 		cfdFloat ratio;
 		for (auto& idx: all_CV) {
-			ratio = abs(d_U_x[POS][idx]) < 1e-16  ?   2.0   : d_U_x[NEG][idx]/d_U_x[POS][idx] ;
+			ratio = abs(d_U_x[POS][idx]) < 1e-16  ?   d_U_x[NEG][idx]/1e-16   : d_U_x[NEG][idx]/d_U_x[POS][idx] ;
 			c->get_U()->update_dU(X, idx, d_U_x[POS][idx]*limiter(limType, ratio));
-			ratio = abs(d_U_y[POS][idx]) < 1e-16  ?   2.0   : d_U_y[NEG][idx]/d_U_y[POS][idx] ;
+			ratio = abs(d_U_y[POS][idx]) < 1e-16  ?   d_U_y[NEG][idx]/1e-16   : d_U_y[NEG][idx]/d_U_y[POS][idx] ;
 			c->get_U()->update_dU(Y, idx, d_U_y[POS][idx]*limiter(limType, ratio));
 		}
 
 		for (auto& idx: all_PV) {
-			ratio = abs(d_PV_x[POS][idx]) < 1e-16  ?   2.0   : d_PV_x[NEG][idx]/d_PV_x[POS][idx] ;
+			ratio = abs(d_PV_x[POS][idx]) < 1e-16  ?   d_PV_x[NEG][idx]/1e-16   : d_PV_x[NEG][idx]/d_PV_x[POS][idx] ;
 			c->get_U()->update_dPV(X, idx, d_PV_x[POS][idx]*limiter(limType, ratio));
-			ratio = abs(d_PV_y[POS][idx]) < 1e-16  ?   2.0   : d_PV_y[NEG][idx]/d_PV_y[POS][idx] ;
+			ratio = abs(d_PV_y[POS][idx]) < 1e-16  ?   d_PV_y[NEG][idx]/1e-16   : d_PV_y[NEG][idx]/d_PV_y[POS][idx] ;
 			c->get_U()->update_dPV(Y, idx, d_PV_y[POS][idx]*limiter(limType, ratio));
 		}
 
@@ -369,7 +384,6 @@ void Solver::calcFaceFluxes() {
 
 void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 
-	cfdFloat dx, dy;
 	int fcnt;
 	cfdFloat flux[4][PayloadVar::N_CV];
 	cfdFloat newU[PayloadVar::N_CV];
@@ -391,8 +405,8 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 //		Cell *c = cp.second;
 
 
-		dx = c->get_dx();
-		dy = c->get_dy();
+		cfdFloat dx = c->get_dx();
+		cfdFloat dy = c->get_dy();
 
 		for (auto& d: all_DIR) {
 
@@ -451,6 +465,20 @@ void Solver::doCellTimestep(cfdFloat dt, cfdInt rkStage) {
 			}
 		}
 
+		if (isnan(newU[CV_DENS]) || newU[CV_DENS] < 0.0) {
+#pragma omp critical
+			{
+				cerr << "NaN density update: cell=" << c->get_id()
+				     << ", rkStage=" << rkStage
+				     << ", dt=" << dt
+				     << ", oldDensity=" << c->get_U(CV_DENS)
+				     << ", newDensity=" << newU[CV_DENS]
+				     << ", massFluxes[W,E,S,N]=["
+				     << flux[W][CV_DENS] << ", " << flux[E][CV_DENS] << ", "
+				     << flux[S][CV_DENS] << ", " << flux[N][CV_DENS] << "]"
+				     << endl;
+			}
+		}
 
 		c->get_U()->update_U(newU);
 
@@ -584,27 +612,27 @@ void Solver::solve() {
 
 
 		// EULER TIMESTEPPING
-//		calcGradientsAtFaces();
-//		limitCellGradients(SUPERBEE);
-//		calcFaceFluxes();
-//		doCellTimestep(dt, 0);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
-//		resolveCellPrimitives();
+		// calcGradientsAtFaces();
+		// limitCellGradients(SUPERBEE);
+		// calcFaceFluxes();
+		// doCellTimestep(dt, 0);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
+		// resolveCellPrimitives();
 
 		// RUNGE-KUTTA TIMESTEPPING
 		calcGradientsAtFaces();
-		limitCellGradients(MINMOD);
+		limitCellGradients(SUPERBEE);
 		calcFaceFluxes();
 		doCellTimestep(dt, 1);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 		resolveCellPrimitives();
 
 		calcGradientsAtFaces();
-		limitCellGradients(MINMOD);
+		limitCellGradients(SUPERBEE);
 		calcFaceFluxes();
 		doCellTimestep(dt, 2);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 		resolveCellPrimitives();
 
 		calcGradientsAtFaces();
-		limitCellGradients(MINMOD);
+		limitCellGradients(SUPERBEE);
 		calcFaceFluxes();
 		doCellTimestep(dt, 3);		// rkStage = 0: Euler scheme.  rkStage in {1,2,3}: Runge-Kutta
 		resolveCellPrimitives();
@@ -714,4 +742,3 @@ void Solver::postProcess() {
 //											  tmpCell->get_li(),    tmpCell->get_lj()) << endl;
 //				}
 //			}
-
