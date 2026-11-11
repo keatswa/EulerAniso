@@ -9,8 +9,8 @@ JSON input/output using jsoncpp
 
 ## Build and run
 
-Install the SDL2, SDL2_gfx, and JsonCpp development libraries, then build from
-the repository root:
+Install the SDL2, SDL2_gfx, and JsonCpp development libraries, plus FFmpeg for
+animation recording, then build from the repository root:
 
 ```sh
 make
@@ -21,4 +21,12 @@ physical-parameters JSON files:
 
 ```sh
 ./build/euler21 Euler21/meshtest.json Euler21/physparams.json
+```
+
+The graphical frames are also recorded to `Euler21.mp4` in the current
+directory using FFmpeg's H.264 encoder. Set `EULER21_VIDEO` to change the output
+path, for example:
+
+```sh
+EULER21_VIDEO=output/run.mp4 ./build/euler21 Euler21/meshtest.json Euler21/physparams.json
 ```
