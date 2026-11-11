@@ -6,9 +6,228 @@
  */
 
 #include "EulerDisplay.h"
+#include <cerrno>
+#include <csignal>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <iostream>
+#include <string>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
+#include <unistd.h>
+#include <vector>
+
+namespace {
+
+void reportExecError(int fd, int error) {
+	const ssize_t bytesWritten = write(fd, &error, sizeof(error));
+	(void)bytesWritten;
+}
+
+}
+
+class EulerDisplay::VideoRecorder {
+public:
+	~VideoRecorder() {
+		stop();
+	}
+
+	bool start(int width, int height, const std::string& outputPath) {
+		int inputPipe[2] = {-1, -1};
+		int execPipe[2] = {-1, -1};
+		if (pipe(inputPipe) != 0 || pipe(execPipe) != 0) {
+			std::cerr << "Could not create FFmpeg pipes: " << std::strerror(errno) << std::endl;
+			closePipes(inputPipe, execPipe);
+			return false;
+		}
+
+		if (fcntl(execPipe[1], F_SETFD, FD_CLOEXEC) == -1) {
+			std::cerr << "Could not configure FFmpeg startup pipe: "
+			          << std::strerror(errno) << std::endl;
+			closePipes(inputPipe, execPipe);
+			return false;
+		}
+
+		struct sigaction ignoreSigpipe {};
+		ignoreSigpipe.sa_handler = SIG_IGN;
+		sigemptyset(&ignoreSigpipe.sa_mask);
+		if (sigaction(SIGPIPE, &ignoreSigpipe, &previousSigpipeAction) != 0) {
+			std::cerr << "Could not configure FFmpeg pipe handling: "
+			          << std::strerror(errno) << std::endl;
+			closePipes(inputPipe, execPipe);
+			return false;
+		}
+		sigpipeIgnored = true;
+
+		pid_t child = fork();
+		if (child == -1) {
+			std::cerr << "Could not start FFmpeg: " << std::strerror(errno) << std::endl;
+			closePipes(inputPipe, execPipe);
+			restoreSigpipe();
+			return false;
+		}
+
+		if (child == 0) {
+			close(inputPipe[1]);
+			close(execPipe[0]);
+			if (dup2(inputPipe[0], STDIN_FILENO) == -1) {
+				const int childError = errno;
+				reportExecError(execPipe[1], childError);
+				_exit(127);
+			}
+			close(inputPipe[0]);
+
+			struct sigaction defaultSigpipe {};
+			defaultSigpipe.sa_handler = SIG_DFL;
+			sigemptyset(&defaultSigpipe.sa_mask);
+			sigaction(SIGPIPE, &defaultSigpipe, nullptr);
+
+			const std::string videoSize = std::to_string(width) + "x" + std::to_string(height);
+			char* args[] = {
+				const_cast<char*>("ffmpeg"),
+				const_cast<char*>("-hide_banner"),
+				const_cast<char*>("-loglevel"),
+				const_cast<char*>("error"),
+				const_cast<char*>("-y"),
+				const_cast<char*>("-f"),
+				const_cast<char*>("rawvideo"),
+				const_cast<char*>("-pixel_format"),
+				const_cast<char*>("rgb24"),
+				const_cast<char*>("-video_size"),
+				const_cast<char*>(videoSize.c_str()),
+				const_cast<char*>("-framerate"),
+				const_cast<char*>("20"),
+				const_cast<char*>("-i"),
+				const_cast<char*>("pipe:0"),
+				const_cast<char*>("-an"),
+				const_cast<char*>("-c:v"),
+				const_cast<char*>("libx264"),
+				const_cast<char*>("-preset"),
+				const_cast<char*>("veryfast"),
+				const_cast<char*>("-crf"),
+				const_cast<char*>("20"),
+				const_cast<char*>("-pix_fmt"),
+				const_cast<char*>("yuv420p"),
+				const_cast<char*>("-movflags"),
+				const_cast<char*>("+faststart"),
+				const_cast<char*>(outputPath.c_str()),
+				nullptr
+			};
+			execvp(args[0], args);
+
+			const int childError = errno;
+			reportExecError(execPipe[1], childError);
+			_exit(127);
+		}
+
+		close(inputPipe[0]);
+		close(execPipe[1]);
+
+		int childError = 0;
+		ssize_t bytesRead;
+		do {
+			bytesRead = read(execPipe[0], &childError, sizeof(childError));
+		} while (bytesRead == -1 && errno == EINTR);
+		close(execPipe[0]);
+
+		if (bytesRead != 0) {
+			if (bytesRead == -1) {
+				childError = errno;
+			}
+			close(inputPipe[1]);
+			int status = 0;
+			waitpid(child, &status, 0);
+			std::cerr << "Could not execute FFmpeg: " << std::strerror(childError) << std::endl;
+			restoreSigpipe();
+			return false;
+		}
+
+		inputFd = inputPipe[1];
+		pid = child;
+		frameSize = static_cast<std::size_t>(width) * height * 3;
+		pixels.resize(frameSize);
+		std::cout << "Recording animation to " << outputPath << " at 10 fps." << std::endl;
+		return true;
+	}
+
+	void capture(SDL_Renderer* renderer, int width, int height) {
+		if (inputFd == -1) {
+			return;
+		}
+
+		if (SDL_RenderReadPixels(renderer, nullptr, SDL_PIXELFORMAT_RGB24,
+		                         pixels.data(), width * 3) != 0) {
+			std::cerr << "Could not capture animation frame: " << SDL_GetError() << std::endl;
+			stop();
+			return;
+		}
+
+		std::size_t offset = 0;
+		while (offset < pixels.size()) {
+			const ssize_t bytesWritten = write(inputFd, pixels.data() + offset, pixels.size() - offset);
+			if (bytesWritten == -1 && errno == EINTR) {
+				continue;
+			}
+			if (bytesWritten <= 0) {
+				std::cerr << "Could not send animation frame to FFmpeg: "
+				          << std::strerror(errno) << std::endl;
+				stop();
+				return;
+			}
+			offset += static_cast<std::size_t>(bytesWritten);
+		}
+	}
+
+private:
+	static void closePipes(const int inputPipe[2], const int execPipe[2]) {
+		for (int fd : {inputPipe[0], inputPipe[1], execPipe[0], execPipe[1]}) {
+			if (fd != -1) {
+				close(fd);
+			}
+		}
+	}
+
+	void restoreSigpipe() {
+		if (sigpipeIgnored) {
+			sigaction(SIGPIPE, &previousSigpipeAction, nullptr);
+			sigpipeIgnored = false;
+		}
+	}
+
+	void stop() {
+		if (inputFd != -1) {
+			close(inputFd);
+			inputFd = -1;
+		}
+
+		if (pid != -1) {
+			int status = 0;
+			pid_t result;
+			do {
+				result = waitpid(pid, &status, 0);
+			} while (result == -1 && errno == EINTR);
+
+			if (result == -1) {
+				std::cerr << "Could not wait for FFmpeg: " << std::strerror(errno) << std::endl;
+			} else if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+				std::cerr << "FFmpeg failed while writing the animation." << std::endl;
+			}
+			pid = -1;
+		}
+
+		restoreSigpipe();
+	}
+
+	int inputFd = -1;
+	pid_t pid = -1;
+	std::size_t frameSize = 0;
+	std::vector<unsigned char> pixels;
+	struct sigaction previousSigpipeAction {};
+	bool sigpipeIgnored = false;
+};
 
 EulerDisplay::EulerDisplay() {
 
@@ -34,6 +253,15 @@ EulerDisplay::EulerDisplay() {
 			if (renderer == NULL) {
 				printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
 			}
+			else {
+				const char* configuredPath = std::getenv("EULER21_VIDEO");
+				const std::string outputPath =
+					configuredPath != nullptr && configuredPath[0] != '\0'
+						? configuredPath
+						: "Euler21.mp4";
+				videoRecorder = std::make_unique<VideoRecorder>();
+				videoRecorder->start(SCREEN_WIDTH, SCREEN_HEIGHT, outputPath);
+			}
 		}
 	}
 
@@ -41,6 +269,7 @@ EulerDisplay::EulerDisplay() {
 
 EulerDisplay::~EulerDisplay() {
 
+	videoRecorder.reset();
 	SDL_DestroyRenderer(renderer);
 	//Destroy window
 	SDL_DestroyWindow( window );
@@ -139,6 +368,9 @@ int EulerDisplay::drawMesh(CellMap &cm, FaceMap &fm) {
 		SDL_Delay(10 );
 	}
 
+	if (videoRecorder) {
+		videoRecorder->capture(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+	}
 	SDL_RenderPresent(renderer);
 	return(0);
 

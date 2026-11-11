@@ -12,6 +12,7 @@
 #include "Mesh.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
+#include <memory>
 
 
 class EulerDisplay {
@@ -72,6 +73,8 @@ public:
 
 private:
 
+	class VideoRecorder;
+	std::unique_ptr<VideoRecorder> videoRecorder;
 
 	SDL_Window   *window = NULL;
 	SDL_Renderer *renderer = NULL;
